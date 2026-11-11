@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="LUNARA Mission Planner — compare lunar south pole lighting conditions and geometric Earth visibility.">
+<title>LUNARA · Lunar Mission Intelligence</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+<style>
+:root{
+  color-scheme:dark;--bg:#080d16;--panel:#101a29;--panel2:#142135;--panel3:#0b1421;--line:#263750;
+  --text:#e9f0fb;--muted:#93a4bd;--soft:#bdc9d9;--cyan:#69d9ff;--blue:#4b9cff;--amber:#ffc66d;
+  --green:#5ce0ae;--red:#ff7d89;--purple:#b69cff;--radius:17px;--shadow:0 18px 55px rgba(0,0,0,.28)
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 14% -10%,#1c2b48 0,transparent 36%),radial-gradient(ellipse at 95% 10%,#112e3a 0,transparent 28%),var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}a{color:var(--cyan)}.app{max-width:1600px;margin:auto;padding:22px 26px 40px}
+.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:16px;margin-bottom:22px}
+.brand{grid-column:2;justify-self:center;display:flex;align-items:center;text-align:center}
+.brand-content{display:flex;flex-direction:column;align-items:center}
+.lunara-logo{
+  position:relative;
+  display:inline-block;
+  margin:0;
+  padding-right:15px;
+  font-family:'Orbitron','Rajdhani','Eurostile',ui-sans-serif,sans-serif;
+  font-size:clamp(26px,2.15vw,34px);
+  font-weight:700;
+  letter-spacing:.13em;
+  line-height:1.2;
+  color:#f7f1ff;
+  text-shadow:0 0 18px rgba(196,154,255,.16);
+}
+.lunara-star{position:absolute;width:15px;height:15px;top:-5px;right:-2px;color:#fff2d6;filter:drop-shadow(0 0 3px #fff2d6) drop-shadow(0 0 8px #e9c99a);transform-origin:center;animation:lunara-star-twinkle 2s ease-in-out infinite}
+@keyframes lunara-star-twinkle{0%,100%{opacity:1;transform:scale(1);filter:drop-shadow(0 0 3px #fff2d6) drop-shadow(0 0 8px #e9c99a)}50%{opacity:.42;transform:scale(.78);filter:drop-shadow(0 0 1px #fff2d6)}}
+.brand p{margin:6px 0 0;color:var(--muted);font-size:9px;letter-spacing:.13em;text-transform:uppercase;text-align:center}
+.top-actions{grid-column:3;justify-self:end}
+@media(prefers-reduced-motion:reduce){.lunara-star{animation:none}}.top-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.status-pill,.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);padding:7px 11px;border-radius:999px;color:var(--soft);font-size:11px;letter-spacing:.04em;background:#0e1a29}.dot{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 9px currentColor}.status-pill.real .dot{background:var(--green)}
+.hero{display:grid;grid-template-columns:1.3fr .7fr;gap:20px;align-items:center;padding:24px 25px;border:1px solid #2e4965;border-radius:22px;background:linear-gradient(118deg,#14283b 0,#101b2e 55%,#142b35 100%);box-shadow:var(--shadow);margin-bottom:19px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:310px;height:310px;border:1px solid #6ed5ff24;border-radius:50%;right:9%;top:-170px;box-shadow:0 0 0 26px #6ed5ff08,0 0 0 54px #6ed5ff06}.eyebrow{color:var(--cyan);font-size:10px;font-weight:800;letter-spacing:.19em;text-transform:uppercase}.hero h2{font-size:clamp(23px,3vw,36px);line-height:1.1;letter-spacing:-.035em;margin:8px 0 10px;max-width:800px}.hero p{color:#b7c6d8;max-width:780px;margin:0}.hero-side{position:relative;z-index:1;justify-self:end;display:grid;grid-template-columns:repeat(2,minmax(100px,1fr));gap:9px;width:min(100%,320px)}.hero-stat{background:#08142185;border:1px solid #44607880;border-radius:13px;padding:12px}.hero-stat strong{display:block;font-size:20px}.hero-stat span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.grid{display:grid;grid-template-columns:350px minmax(0,1fr);gap:18px;align-items:start}.panel{background:linear-gradient(160deg,#121e2e,#0e1826);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.panel-head{padding:16px 18px 12px;border-bottom:1px solid #24354a;display:flex;align-items:center;justify-content:space-between;gap:10px}.panel-head h3{margin:0;font-size:13px;letter-spacing:.1em;text-transform:uppercase}.panel-head small{color:var(--muted);font-size:10px}.panel-body{padding:17px}.section-kicker{font-size:10px;color:var(--cyan);font-weight:800;letter-spacing:.15em;text-transform:uppercase;margin:2px 0 10px}.field{display:grid;gap:5px;margin-bottom:11px}.field label{color:#aebdd0;font-size:11px;font-weight:650}.field input,.field select{width:100%;background:#091321;border:1px solid #2b4058;border-radius:9px;color:var(--text);padding:10px 11px;outline:none;min-width:0}.field input:focus,.field select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #69d9ff16}.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field-note{font-size:10px;color:var(--muted);margin-top:-4px}.divider{border:0;border-top:1px solid #26374b;margin:16px 0}.btn{border:1px solid #36516d;border-radius:9px;padding:10px 13px;background:#1b3048;color:#eaf5ff;font-weight:700;font-size:11px;letter-spacing:.04em;transition:.18s}.btn:hover{filter:brightness(1.15);transform:translateY(-1px)}.btn.primary{background:linear-gradient(120deg,#1e8db4,#286eb0);border-color:#55c7eb;color:white}.btn.ghost{background:#0d1928}.btn.amber{background:#49381d;border-color:#876734;color:#ffe0a2}.btn.small{padding:7px 10px;font-size:10px}.btn-row{display:flex;gap:8px;flex-wrap:wrap}.btn.full{width:100%}.file-label{display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}.file-label input{display:none}.status-note{font-size:10px;line-height:1.45;color:var(--muted);padding:9px 10px;border-radius:9px;background:#0a1421;border:1px solid #22354a;margin-top:10px}.status-note.warn{color:#ffd995;border-color:#72592e;background:#2b2114}.status-note.good{color:#9cebcf;border-color:#2d6a59;background:#10281f}
+.content{min-width:0}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:15px}.kpi{background:linear-gradient(145deg,#142338,#0e1827);border:1px solid var(--line);border-radius:14px;padding:14px 15px;min-width:0}.kpi .label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.11em}.kpi strong{display:block;font-size:clamp(18px,2vw,25px);margin:4px 0 1px;font-variant-numeric:tabular-nums}.kpi small{font-size:10px;color:var(--muted)}.sun-text{color:var(--amber)}.earth-text{color:var(--cyan)}.green-text{color:var(--green)}
+.visual-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-bottom:15px}.scene-wrap{position:relative;height:330px;background:radial-gradient(ellipse at 50% 20%,#16314c,#08111d 73%);overflow:hidden}.scene-wrap canvas{display:block;width:100%;height:100%}.scene-label{position:absolute;top:11px;left:13px;z-index:2;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#c5d8ea;background:#07111dc9;border:1px solid #314b63;padding:6px 9px;border-radius:7px;pointer-events:none}.scene-help{position:absolute;bottom:9px;left:12px;z-index:2;color:#9badc2;font-size:9px;background:#07111dc9;padding:5px 8px;border-radius:6px;pointer-events:none}.scene-status{position:absolute;right:12px;top:11px;color:#9fb5c9;font-size:9px;background:#07111dc9;padding:5px 8px;border:1px solid #314b63;border-radius:6px}.legend{display:flex;gap:13px;flex-wrap:wrap;padding:10px 15px;border-top:1px solid #26384e;color:var(--muted);font-size:10px}.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:8px;height:8px;border-radius:50%;display:inline-block}.metrics-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}.metric-card{border:1px solid var(--line);border-radius:14px;background:#101c2b;padding:14px}.metric-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.metric-title strong{font-size:12px}.metric-title span{font-size:10px;color:var(--muted)}.big-reading{font-size:27px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.sub-reading{font-size:10px;color:var(--muted);margin-top:2px}.metric-line{display:flex;justify-content:space-between;gap:8px;border-top:1px solid #25364a;padding-top:7px;margin-top:8px;font-size:10px;color:#aabbd0}.metric-line b{color:#e9f2ff;font-weight:700}.flag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 8px;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.flag.good{background:#123527;color:#8af0c5}.flag.partial{background:#382f1c;color:#ffdc91}.flag.bad{background:#3b202b;color:#ff9aa5}.flag.neutral{background:#1d2b3e;color:#a9c6e6}
+.chart-box{padding:12px 15px 6px}.chart-canvas{display:block;width:100%;height:245px}.chart-legend{display:flex;gap:14px;padding:0 4px 12px;color:var(--muted);font-size:10px}.chart-legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}.timeline{padding:14px 16px 16px}.track{display:grid;grid-template-columns:75px minmax(0,1fr);gap:10px;align-items:center;margin:10px 0}.track-name{font-size:10px;color:#b9c8d9}.track-bar{height:15px;border-radius:5px;background:#1d2a3a;position:relative;overflow:hidden;border:1px solid #2c4054}.segment{position:absolute;top:0;bottom:0;border-radius:3px}.time-control{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:13px 16px;border-top:1px solid #25364a}.time-control input{width:100%;accent-color:var(--cyan)}.time-label{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}.range-label{font-size:10px;color:var(--muted)}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:15px}.compare-list{display:grid;gap:8px}.compare-item{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:#0b1624;border:1px solid #27394e;padding:10px 11px;border-radius:10px}.compare-item strong{font-size:11px}.compare-item small{display:block;color:var(--muted);font-size:9px;margin-top:2px}.compare-empty{font-size:11px;color:var(--muted);padding:16px;text-align:center;border:1px dashed #30435b;border-radius:10px}.table-wrap{overflow:auto}.data-table{width:100%;border-collapse:collapse;font-size:10px;min-width:520px}.data-table th{text-align:left;color:#9fb0c5;font-weight:700;text-transform:uppercase;letter-spacing:.08em;background:#0a1522;padding:9px}.data-table td{padding:10px 9px;border-top:1px solid #26364a;color:#dce7f4}.data-table td.num{font-variant-numeric:tabular-nums}.search-controls{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.search-controls .field{margin:0}.search-results{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:13px}.candidate{border:1px solid #2a4056;background:#0c1725;border-radius:11px;padding:11px}.candidate strong{font-size:11px;display:block}.candidate p{font-size:9px;color:var(--muted);margin:4px 0}.candidate .candidate-values{display:flex;gap:9px;font-size:10px;margin:8px 0;color:#e0eaf8}.candidate button{width:100%}.technical{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.tech-item{padding:12px;border:1px solid #27394f;border-radius:11px;background:#0b1624}.tech-item strong{font-size:10px;display:block;margin-bottom:4px}.tech-item p{font-size:9px;color:var(--muted);margin:0}.footer{color:#73869f;font-size:10px;text-align:center;padding:22px 0 8px}.hide{display:none!important}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.tag{font-size:9px;border:1px solid #31465f;border-radius:5px;padding:3px 6px;color:#9fb5cb}.inline-note{font-size:10px;color:var(--muted)}
+@media(max-width:1050px){.grid{grid-template-columns:300px 1fr}.visual-grid{grid-template-columns:1fr}.scene-wrap{height:300px}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.app{padding:14px}.hero{grid-template-columns:1fr}.hero-side{justify-self:start;width:100%}.grid{grid-template-columns:1fr}.visual-grid,.bottom-grid,.metrics-row{grid-template-columns:1fr}.search-controls{grid-template-columns:repeat(2,1fr)}.search-results{grid-template-columns:1fr 1fr}.technical{grid-template-columns:1fr}.topbar{display:flex;align-items:center;flex-direction:column}.brand{align-self:center}.top-actions{align-self:center;justify-content:center}.scene-wrap{height:280px}}
+@media(max-width:460px){.search-results{grid-template-columns:1fr}.field-row{grid-template-columns:1fr 1fr}.kpi{padding:11px}.track{grid-template-columns:58px 1fr}}
+
+/* LUNARA — dark violet environment */
+:root{
+  color-scheme:dark;
+  --bg:#090612;
+  --panel:#151026;
+  --panel2:#1c1530;
+  --panel3:#100b1d;
+  --line:#392b52;
+  --text:#f0eafa;
+  --muted:#aa9bbf;
+  --soft:#d3c7e4;
+  --cyan:#c49aff;
+  --blue:#9878e8;
+  --purple:#c2a6ff;
+  --amber:#ffc66d;
+  --green:#66dfb2;
+  --red:#ff879d;
+  --radius:17px;
+  --shadow:0 18px 55px rgba(3,0,12,.42),0 0 30px rgba(117,75,173,.08);
+}
+body{
+  background:
+    radial-gradient(ellipse at 13% -10%,#30204d 0,transparent 38%),
+    radial-gradient(ellipse at 94% 9%,#26163d 0,transparent 32%),
+    radial-gradient(ellipse at 50% 100%,#150d25 0,transparent 48%),
+    var(--bg);
+  color:var(--text);
+}
+a{color:#d0b3ff}
+.status-pill,.chip{background:#171027;border-color:#493761;color:#d9cbea}
+.hero{
+  border-color:#554071;
+  background:linear-gradient(118deg,#211638 0%,#171027 55%,#28183c 100%);
+  box-shadow:var(--shadow);
+}
+.hero:after{
+  border-color:#c49aff26;
+  box-shadow:0 0 0 26px #c49aff09,0 0 0 54px #c49aff06;
+}
+.hero p{color:#c9bddb}
+.hero-stat{background:#0d081bbd;border-color:#57427399}
+.panel{
+  background:linear-gradient(160deg,#19122b,#100b1d);
+  border-color:#3c2d55;
+}
+.panel-head{border-bottom-color:#3b2d51}
+.section-kicker,.eyebrow{color:#c7a6ff}
+.field label{color:#c2b4d5}
+.field input,.field select{
+  background:#0d0819;
+  border-color:#443358;
+  color:#f0eafa;
+}
+.field input:focus,.field select:focus{
+  border-color:#c49aff;
+  box-shadow:0 0 0 3px #c49aff20;
+}
+.divider{border-top-color:#3b2d51}
+.btn{
+  background:#2a1d40;
+  border-color:#594273;
+  color:#f1eaff;
+}
+.btn.primary{
+  background:linear-gradient(120deg,#8156bd,#6744a7);
+  border-color:#b28be8;
+  color:#fff;
+}
+.btn.ghost{background:#171027;border-color:#493761}
+.btn.amber{background:#49351c;border-color:#876734;color:#ffe0a2}
+.status-note{background:#100b1d;border-color:#3b2d51}
+.kpi{
+  background:linear-gradient(145deg,#211735,#120d20);
+  border-color:#3b2d51;
+}
+.earth-text{color:#c49aff}
+.scene-wrap{
+  background:radial-gradient(ellipse at 50% 20%,#2b1b45,#0b0717 76%);
+}
+.scene-label,.scene-help,.scene-status{
+  background:#0c0719e8;
+  border-color:#493761;
+  color:#d5c5e8;
+}
+.legend{border-top-color:#3b2d51}
+.metric-card{background:#171027;border-color:#3b2d51}
+.metric-line{border-top-color:#3b2d51;color:#c5b7d8}
+.metric-line b{color:#f0eafa}
+.flag.neutral{background:#2b2040;color:#d3baff}
+.chart-legend{color:#b8a9ca}
+.track-bar{background:#211832;border-color:#493761}
+.time-control{border-top-color:#3b2d51}
+.time-control input{accent-color:#bd96f6}
+.compare-item,.candidate,.tech-item{
+  background:#120d20;
+  border-color:#3b2d51;
+}
+.compare-empty{border-color:#514068}
+.data-table th{background:#100b1d;color:#c5b5da}
+.data-table td{border-top-color:#3b2d51;color:#e8def4}
+.tag{border-color:#594273;color:#cfb9eb}
+.footer{color:#9282a8}
+.lunara-logo{color:#f7f1ff}
+.lunara-star{color:#fff2d6}
+
+</style>
+
+<style id="lunara-presentation-refresh">
+/* ------------------------------------------------------------------
+   LUNARA PRESENTATION REFRESH
+   Presentation layer only: preserves existing calculation and control IDs.
+   ------------------------------------------------------------------ */
+:root {
+  --bg: #080711;
+  --panel: #151020;
+  --panel2: #1d1630;
+  --panel3: #100b1b;
+  --line: rgba(189, 160, 232, .17);
+  --text: #f5f0fb;
+  --muted: #a99bb9;
+  --soft: #d9cde7;
+  --cyan: #8cdcff;
+  --blue: #8d9fff;
+  --purple: #bd9bff;
+  --amber: #ffd17e;
+  --green: #83e6bf;
+  --red: #ff879e;
+  --radius: 19px;
+  --shadow: 0 24px 70px rgba(0,0,0,.34), 0 1px 0 rgba(255,255,255,.025) inset;
+}
+html { scroll-padding-top: 92px; }
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(97,62,144,.23), transparent 34%),
+    radial-gradient(ellipse at 92% 7%, rgba(61,76,130,.16), transparent 28%),
+    radial-gradient(ellipse at 52% 54%, rgba(73,44,101,.08), transparent 42%),
+    linear-gradient(180deg, #090713 0%, #0b0914 52%, #080711 100%);
+  color: var(--text);
+  letter-spacing: .005em;
+}
+body:before {
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:-1; opacity:.19;
+  background-image: radial-gradient(rgba(232,219,255,.62) .65px, transparent .8px);
+  background-size: 53px 53px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+.app { max-width: 1720px; padding: 20px clamp(14px,2.4vw,38px) 48px; }
+.topbar {
+  display:flex; justify-content:space-between; align-items:center; gap:22px;
+  margin-bottom: 14px; min-height: 62px;
+}
+.brand { position:relative; display:flex; align-items:center; justify-self:auto; grid-column:auto; gap:14px; text-align:left; }
+.brand:before {
+  content:""; width:43px; height:43px; flex:0 0 43px; border-radius:50%; display:block;
+  background:
+    radial-gradient(circle at 31% 28%, rgba(255,255,255,.9) 0 1px, transparent 2px),
+    radial-gradient(circle at 68% 65%, rgba(30,20,45,.72) 0 4px, transparent 5px),
+    radial-gradient(circle at 38% 36%, #e9e2ee 0%, #b2a9c0 39%, #62576f 71%, #272033 100%);
+  box-shadow: 0 0 0 1px rgba(228,209,255,.22), 0 0 26px rgba(185,151,255,.22), inset -8px -7px 14px rgba(0,0,0,.36);
+  position:relative;
+}
+.brand:after {
+  content:""; position:absolute; left:-5px; top:-5px; width:53px; height:53px; border:1px solid rgba(196,169,255,.38);
+  border-radius:50%; transform:rotate(-23deg) scaleY(.39); pointer-events:none;
+}
+.brand-content { align-items:flex-start; }
+.lunara-logo { font-size:clamp(25px,2vw,32px); letter-spacing:.16em; text-shadow:0 0 22px rgba(196,154,255,.25); }
+.brand p { text-align:left; margin-top:3px; font-size:9px; letter-spacing:.17em; }
+.top-actions { grid-column:auto; justify-self:auto; justify-content:flex-end; }
+.status-pill,.chip { background:rgba(24,18,38,.82); border-color:rgba(189,160,232,.2); backdrop-filter:blur(12px); }
+.status-pill { padding:8px 12px; }
+.status-pill .dot { background:var(--amber); }
+.status-pill.real .dot { background:var(--green); }
+.mission-nav {
+  display:flex; align-items:center; gap:5px; width:max-content; max-width:100%; overflow-x:auto;
+  margin: 0 0 18px; padding:5px; border:1px solid rgba(189,160,232,.14); border-radius:14px;
+  background:rgba(18,13,29,.77); box-shadow:0 8px 28px rgba(0,0,0,.16); backdrop-filter:blur(16px);
+  scrollbar-width:thin;
+}
+.mission-nav a {
+  flex:0 0 auto; color:#b8a9ca; text-decoration:none; font-size:10px; font-weight:700;
+  letter-spacing:.055em; padding:9px 13px; border-radius:9px; transition:all .2s ease;
+}
+.mission-nav a:hover,.mission-nav a:focus-visible { color:#fff; background:rgba(189,155,255,.12); outline:none; }
+.mission-nav a.active { color:#f6edff; background:linear-gradient(135deg,rgba(155,113,219,.28),rgba(99,76,150,.16)); box-shadow:inset 0 0 0 1px rgba(196,166,255,.2); }
+.hero {
+  grid-template-columns:minmax(0,1.25fr) minmax(270px,.75fr); gap:28px;
+  min-height:242px; padding:clamp(24px,3vw,42px); margin-bottom:18px;
+  border:1px solid rgba(197,167,247,.26); border-radius:25px;
+  background:
+    radial-gradient(circle at 81% 51%, rgba(139,102,195,.22), transparent 24%),
+    linear-gradient(112deg, rgba(39,27,58,.97) 0%, rgba(24,18,39,.98) 49%, rgba(22,24,47,.97) 100%);
+  box-shadow:0 28px 80px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.045);
+}
+.hero:before {
+  content:""; position:absolute; z-index:0; pointer-events:none; width:280px; height:280px; right:22%; top:-118px; border-radius:50%;
+  background:
+    radial-gradient(circle at 31% 28%, rgba(255,255,255,.78) 0 1px, transparent 2px),
+    radial-gradient(circle at 68% 65%, rgba(28,22,43,.4) 0 8px, transparent 9px),
+    radial-gradient(circle at 42% 39%, #d3cbd9 0%, #9a8fa7 38%, #554c65 69%, #211b2c 100%);
+  box-shadow:inset -26px -18px 42px rgba(0,0,0,.53), 0 0 85px rgba(186,153,255,.17);
+  opacity:.26;
+}
+.hero:after {
+  width:420px; height:420px; right:12%; top:-245px; border-color:rgba(205,178,255,.2);
+  box-shadow:0 0 0 26px rgba(196,154,255,.035),0 0 0 62px rgba(196,154,255,.025),0 0 0 105px rgba(196,154,255,.018);
+}
+.hero>div { position:relative; z-index:1; }
+.eyebrow { display:flex; align-items:center; gap:9px; color:#d0b2ff; font-size:9px; letter-spacing:.2em; }
+.eyebrow:before { content:""; width:22px; height:1px; background:linear-gradient(90deg,var(--purple),transparent); }
+.hero h2 { max-width:760px; font-size:clamp(27px,3.2vw,43px); line-height:1.07; letter-spacing:-.045em; margin:13px 0 13px; text-wrap:balance; }
+.hero p { color:#c9bfd8; font-size:13px; line-height:1.75; max-width:720px; }
+.hero-side { width:min(100%,350px); gap:10px; }
+.hero-stat { padding:14px 15px; border:1px solid rgba(222,203,255,.15); border-radius:15px; background:rgba(9,7,18,.47); backdrop-filter:blur(10px); }
+.hero-stat strong { font-size:23px; letter-spacing:-.04em; }
+.hero-stat span { color:#b7a9c9; font-size:9px; letter-spacing:.14em; }
+.grid { grid-template-columns:minmax(290px,330px) minmax(0,1fr); gap:17px; }
+.panel {
+  border:1px solid rgba(189,160,232,.16); border-radius:var(--radius);
+  background:linear-gradient(155deg,rgba(27,20,43,.97),rgba(16,12,27,.98));
+  box-shadow:0 18px 50px rgba(0,0,0,.21), inset 0 1px 0 rgba(255,255,255,.025);
+}
+.panel-head { padding:16px 19px 14px; border-bottom:1px solid rgba(189,160,232,.12); }
+.panel-head h3 { font-size:11px; font-weight:800; letter-spacing:.13em; }
+.panel-head small { color:#9383a8; font-size:9px; letter-spacing:.13em; }
+.panel-body { padding:18px; }
+.section-kicker { color:#c3a0ff; font-size:9px; letter-spacing:.18em; }
+.field { gap:6px; margin-bottom:12px; }
+.field label { color:#c5b8d3; font-size:10px; }
+.field input,.field select {
+  background:rgba(9,7,18,.72); border:1px solid rgba(180,151,223,.2); border-radius:10px;
+  padding:10px 12px; color:#f2ebfb; transition:border-color .18s,box-shadow .18s,background .18s;
+}
+.field input:hover,.field select:hover { border-color:rgba(196,166,255,.4); }
+.field input:focus,.field select:focus { border-color:#b994f4; box-shadow:0 0 0 3px rgba(185,148,244,.13); background:#100b1e; }
+.field-note,.inline-note { color:#9d8fb0; line-height:1.6; }
+.divider { border-top-color:rgba(189,160,232,.12); margin:17px 0; }
+.btn {
+  border:1px solid rgba(197,168,244,.25); border-radius:10px; padding:10px 14px;
+  background:linear-gradient(135deg,#302044,#211833); color:#f6efff; font-size:10px;
+  letter-spacing:.055em; box-shadow:0 5px 15px rgba(0,0,0,.13); transition:transform .18s,border-color .18s,filter .18s,box-shadow .18s;
+}
+.btn:hover { transform:translateY(-2px); filter:brightness(1.13); border-color:rgba(210,184,255,.5); box-shadow:0 9px 22px rgba(0,0,0,.22); }
+.btn:focus-visible { outline:2px solid #d8bdff; outline-offset:2px; }
+.btn.primary { background:linear-gradient(120deg,#9b70d8,#694ca9 58%,#55458f); border-color:#c4a0f2; box-shadow:0 8px 25px rgba(126,85,187,.24),inset 0 1px 0 rgba(255,255,255,.15); }
+.btn.primary:hover { filter:brightness(1.16); box-shadow:0 10px 28px rgba(126,85,187,.34); }
+.btn.ghost { background:rgba(20,14,32,.88); border-color:rgba(189,160,232,.19); }
+.btn.amber { background:linear-gradient(120deg,#6a4b25,#392817); border-color:#987146; }
+.status-note { padding:11px 12px; border-radius:11px; font-size:10px; line-height:1.6; background:rgba(11,8,20,.75); border-color:rgba(189,160,232,.15); }
+.status-note.warn { background:rgba(69,47,20,.29); border-color:rgba(220,171,93,.33); color:#f0cf9b; }
+.status-note.good { background:rgba(20,72,53,.25); border-color:rgba(99,207,164,.3); color:#a7ead0; }
+.kpis { gap:12px; margin-bottom:16px; }
+.kpi {
+  position:relative; overflow:hidden; min-height:105px; padding:16px 17px;
+  border:1px solid rgba(189,160,232,.16); border-radius:16px;
+  background:linear-gradient(145deg,rgba(32,24,49,.98),rgba(17,13,29,.98));
+  box-shadow:0 12px 32px rgba(0,0,0,.17), inset 0 1px 0 rgba(255,255,255,.035);
+  transition:transform .2s,border-color .2s;
+}
+.kpi:hover { transform:translateY(-3px); border-color:rgba(196,166,255,.35); }
+.kpi:after { content:""; position:absolute; width:90px; height:90px; right:-36px; bottom:-52px; border-radius:50%; border:1px solid rgba(196,166,255,.13); box-shadow:0 0 0 12px rgba(196,166,255,.025),0 0 0 25px rgba(196,166,255,.018); }
+.kpi .label { font-size:9px; letter-spacing:.14em; color:#a99bb9; }
+.kpi strong { font-size:clamp(21px,2.1vw,28px); letter-spacing:-.04em; margin:7px 0 2px; }
+.kpi small { color:#9588a7; font-size:9px; }
+.sun-text { color:#ffd27e; }
+.earth-text { color:#91d9ff; }
+.green-text { color:#8ae5be; }
+.visual-grid { gap:15px; margin-bottom:16px; }
+.scene-wrap { height:355px; background:radial-gradient(ellipse at 50% 25%,#2a1d40 0%,#120d20 49%,#080711 100%); }
+.scene-wrap canvas { outline:none; }
+.scene-label,.scene-status,.scene-help { background:rgba(10,7,19,.76); border:1px solid rgba(196,166,255,.2); color:#e4d9f2; backdrop-filter:blur(9px); }
+.scene-label { top:14px; left:14px; font-size:9px; letter-spacing:.14em; }
+.scene-status { top:14px; right:14px; border-radius:7px; }
+.scene-help { bottom:14px; left:14px; font-size:9px; }
+.legend { padding:11px 16px; background:rgba(10,7,19,.28); border-top:1px solid rgba(189,160,232,.11); color:#a99bb9; font-size:9px; }
+.legend i { width:7px; height:7px; box-shadow:0 0 8px currentColor; }
+.metrics-row { gap:14px; margin-bottom:16px; }
+.metric-card { border:1px solid rgba(189,160,232,.16); border-radius:16px; background:linear-gradient(155deg,rgba(29,22,45,.98),rgba(16,12,27,.98)); padding:17px 18px; box-shadow:0 12px 32px rgba(0,0,0,.15); }
+.metric-title { margin-bottom:12px; }
+.metric-title strong { font-size:10px; letter-spacing:.12em; }
+.big-reading { font-size:clamp(28px,2.6vw,36px); letter-spacing:-.05em; }
+.sub-reading { color:#9f91b0; font-size:10px; }
+.metric-line { border-top:1px solid rgba(189,160,232,.12); padding-top:9px; margin-top:9px; color:#b3a7c0; font-size:10px; }
+.metric-line b { color:#f0e9f7; }
+.flag { padding:5px 9px; font-size:8px; letter-spacing:.09em; }
+.flag.good { background:rgba(24,102,72,.28); color:#9be9c9; }
+.flag.partial { background:rgba(121,83,30,.28); color:#f1d18d; }
+.flag.bad { background:rgba(127,46,64,.28); color:#ffabb7; }
+.flag.neutral { background:rgba(99,80,133,.25); color:#d6c3f4; }
+.chart-box { padding:15px 18px 7px; }
+.chart-canvas { height:270px; }
+.chart-legend { gap:18px; color:#ad9fbd; font-size:9px; padding:4px 5px 13px; }
+.timeline { padding:17px 18px 18px; }
+.track { grid-template-columns:92px minmax(0,1fr); gap:13px; margin:13px 0; }
+.track-name { font-size:10px; font-weight:700; color:#c7b9d6; }
+.track-bar { height:17px; border-radius:6px; background:#241b33; border:1px solid rgba(189,160,232,.14); }
+.segment { box-shadow:0 0 12px rgba(255,255,255,.08); }
+.time-control { padding:14px 18px; border-top:1px solid rgba(189,160,232,.12); }
+.time-control input { accent-color:#c6a4ff; }
+.time-label { color:#b9aac9; font-size:9px; }
+.bottom-grid { gap:15px; margin-top:16px; }
+.compare-list { gap:9px; }
+.compare-item,.candidate,.tech-item { border:1px solid rgba(189,160,232,.15); border-radius:12px; background:rgba(12,9,22,.72); padding:12px; }
+.compare-item strong,.candidate strong { font-size:11px; }
+.compare-item small,.candidate p { color:#9e90af; }
+.compare-empty { color:#a99bb9; border-color:rgba(189,160,232,.22); border-radius:12px; padding:20px; }
+.data-table { font-size:10px; }
+.data-table th { background:rgba(10,7,19,.82); color:#b7a8c8; padding:11px 10px; }
+.data-table td { border-top:1px solid rgba(189,160,232,.12); color:#e8dff1; padding:11px 10px; }
+.search-controls { gap:10px; }
+.candidate { transition:transform .18s,border-color .18s; }
+.candidate:hover { transform:translateY(-2px); border-color:rgba(196,166,255,.42); }
+.technical { gap:11px; }
+.tech-item { padding:14px; }
+.tech-item strong { color:#e5d8f4; font-size:10px; letter-spacing:.035em; }
+.tech-item p { color:#a99bb9; line-height:1.65; }
+.tag { border-color:rgba(189,160,232,.2); color:#c8b5e0; }
+.footer { padding:28px 0 10px; color:#81738f; font-size:9px; letter-spacing:.06em; }
+#science { margin-bottom:4px; }
+#science .technical { grid-template-columns:repeat(3,minmax(0,1fr)); }
+#workspace aside.panel { position:sticky; top:14px; max-height:calc(100vh - 28px); overflow:auto; scrollbar-width:thin; scrollbar-color:#57436e transparent; }
+#workspace aside.panel::-webkit-scrollbar { width:7px; }
+#workspace aside.panel::-webkit-scrollbar-thumb { background:#57436e; border-radius:10px; }
+@media (max-width:1120px) {
+  .grid { grid-template-columns:minmax(270px,300px) minmax(0,1fr); }
+  .hero { grid-template-columns:1.1fr .9fr; }
+  #science .technical { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:850px) {
+  .topbar { align-items:flex-start; }
+  .top-actions { max-width:55%; }
+  .grid { grid-template-columns:1fr; }
+  #workspace aside.panel { position:relative; top:auto; max-height:none; overflow:visible; }
+  .hero { grid-template-columns:1fr; }
+  .hero-side { justify-self:start; width:min(100%,500px); }
+  .visual-grid { grid-template-columns:1fr; }
+  .scene-wrap { height:320px; }
+  .mission-nav { width:100%; }
+}
+@media (max-width:620px) {
+  .app { padding:13px 11px 30px; }
+  .topbar { flex-direction:column; align-items:center; gap:13px; }
+  .brand { align-self:center; }
+  .brand-content { align-items:center; }
+  .brand p { text-align:center; }
+  .top-actions { max-width:100%; justify-content:center; }
+  .hero { padding:22px 19px; border-radius:19px; }
+  .hero h2 { font-size:29px; }
+  .hero-side { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .kpi { min-height:100px; padding:13px; }
+  .metrics-row,.bottom-grid { grid-template-columns:1fr; }
+  .scene-wrap { height:280px; }
+  .search-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .search-results { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #science .technical { grid-template-columns:1fr; }
+  .panel-head { padding:14px 15px 12px; }
+  .panel-body { padding:14px; }
+  .mission-nav a { padding:8px 10px; font-size:9px; }
+}
+@media (max-width:390px) {
+  .search-results { grid-template-columns:1fr; }
+  .hero-side { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .time-control { grid-template-columns:1fr auto; }
+  .time-control button { grid-column:2; }
+  .time-label { grid-column:1 / -1; grid-row:2; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*:before,*:after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
+}
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Orbitron:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+
+<style id="lunara-english-futuristic-polish">
+:root {
+  --font-ui: "Space Grotesk", "Segoe UI", sans-serif;
+  --font-display: "Sora", "Space Grotesk", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-brand: "Orbitron", "Sora", sans-serif;
+}
+body, button, input, select { font-family: var(--font-ui); }
+body { letter-spacing: .008em; }
+h1, h2, h3, .hero h2, .panel-head h3 { font-family: var(--font-display); }
+.lunara-logo { font-family: var(--font-brand); font-weight: 700; letter-spacing: .19em; font-size: clamp(25px,2.1vw,34px); }
+.brand { gap: 13px; }
+.brand:before, .brand:after { display:none !important; content:none !important; }
+.lunara-emblem { width:56px; height:56px; flex:0 0 56px; overflow:visible; filter:drop-shadow(0 0 15px rgba(180,145,255,.24)); }
+.emblem-orbit { transform-box:fill-box; transform-origin:center; }
+.emblem-orbit-a { animation:lunara-orbit 22s linear infinite; }
+.emblem-orbit-b { animation:lunara-orbit 30s linear infinite reverse; opacity:.7; }
+@keyframes lunara-orbit { to { transform:rotate(360deg); } }
+.brand-mark { color:#9fddff; font-size:.62em; letter-spacing:.04em; vertical-align:top; opacity:.82; }
+.brand p { font-family:var(--font-mono); font-size:8px; letter-spacing:.13em; }
+.brand p i { color:#9ddfff; font-style:normal; }
+.mission-nav a { font-family:var(--font-mono); font-size:9px; letter-spacing:.035em; text-transform:uppercase; }
+.eyebrow { font-family:var(--font-mono); }
+.hero { position:relative; isolation:isolate; overflow:hidden; }
+.hero-copy { max-width:850px; }
+.hero h2 { max-width:850px; font-size:clamp(30px,4vw,52px); letter-spacing:-.055em; line-height:1.03; }
+.hero h2 em { color:#c8aaff; font-style:normal; text-shadow:0 0 26px rgba(183,143,255,.2); }
+.hero p { max-width:750px; font-size:14px; }
+.hero-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
+.hero-tags span { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid rgba(201,174,255,.18); border-radius:999px; background:rgba(10,7,19,.34); color:#d7cae8; font:8px var(--font-mono); letter-spacing:.08em; }
+.hero-tags i { width:5px; height:5px; border-radius:50%; background:#a9e8ff; box-shadow:0 0 9px #9edfff; }
+.hero-stat strong { font-family:var(--font-display); }
+.hero-stat span { font-family:var(--font-mono); }
+.kpi .label, .panel-head small, .section-kicker, .metric-title strong, .track-name, .flag, .tag { font-family:var(--font-mono); }
+.kpi strong, .big-reading, .time-label, .data-table td.num { font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+.field label { font-family:var(--font-ui); }
+.btn { font-family:var(--font-ui); }
+.scene-label, .scene-status, .scene-help { font-family:var(--font-mono); }
+.tech-item strong { font-family:var(--font-display); }
+.tech-item p { font-family:var(--font-ui); }
+.footer { font-family:var(--font-mono); }
+@media (max-width:850px) { .hero-tags { margin-top:15px; } .lunara-emblem { width:50px; height:50px; flex-basis:50px; } }
+@media (prefers-reduced-motion:reduce) { .emblem-orbit-a,.emblem-orbit-b { animation:none; } }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg class="lunara-emblem" viewBox="0 0 72 72" role="img" aria-label="LUNARA lunar-orbit emblem">
+        <defs>
+          <radialGradient id="moonMetal" cx="30%" cy="26%" r="78%">
+            <stop offset="0" stop-color="#f6f0ff"/>
+            <stop offset=".34" stop-color="#bdb2d4"/>
+            <stop offset=".72" stop-color="#655a78"/>
+            <stop offset="1" stop-color="#292238"/>
+          </radialGradient>
+          <linearGradient id="orbitGlow" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#a8e8ff"/>
+            <stop offset=".52" stop-color="#c6a1ff"/>
+            <stop offset="1" stop-color="#f8d18b"/>
+          </linearGradient>
+          <clipPath id="moonClip"><circle cx="34" cy="35" r="17"/></clipPath>
+        </defs>
+        <ellipse class="emblem-orbit emblem-orbit-a" cx="36" cy="36" rx="31" ry="13" fill="none" stroke="url(#orbitGlow)" stroke-width="1.35" transform="rotate(-31 36 36)"/>
+        <ellipse class="emblem-orbit emblem-orbit-b" cx="36" cy="36" rx="27" ry="10" fill="none" stroke="#d6c4f5" stroke-opacity=".5" stroke-width=".8" transform="rotate(53 36 36)"/>
+        <circle cx="34" cy="35" r="17" fill="url(#moonMetal)" stroke="#f0e6ff" stroke-opacity=".72" stroke-width=".8"/>
+        <g clip-path="url(#moonClip)" fill="#342b45" opacity=".46">
+          <circle cx="26" cy="28" r="4.1"/><circle cx="41" cy="42" r="5.2"/><circle cx="44" cy="27" r="2.2"/><circle cx="28" cy="44" r="2.5"/>
+        </g>
+        <path d="M50 15 L54 7 L58 15 L66 19 L58 23 L54 31 L50 23 L42 19Z" fill="#fff1d0" opacity=".95"/>
+        <circle cx="9.5" cy="52" r="3.1" fill="#9de5ff" stroke="#e8f8ff" stroke-width=".8"/>
+        <path d="M10 52 Q20 62 34 57" fill="none" stroke="#a9ddff" stroke-width="1" stroke-dasharray="2.4 3.2" opacity=".8"/>
+      </svg>
+      <div class="brand-content">
+        <h1 class="lunara-logo">LUNARA<span class="brand-mark"> // </span></h1>
+        <p>LUNAR SOUTH POLE <i>·</i> MISSION INTELLIGENCE</p>
+      </div>
+    </div>
+    <div class="top-actions"><span id="dataBadge" class="status-pill"><i class="dot"></i><span id="dataBadgeText">DEMO MODE · SYNTHETIC DATA</span></span><span class="chip">UTC · IAU_MOON</span><button class="btn small ghost" id="exportJson">Export mission report ↗</button></div>
+  </header>
+
+  <nav class="mission-nav" aria-label="LUNARA navigation">
+    <a class="active" href="#workspace">Mission overview</a>
+    <a href="#visuals">3D environment</a>
+    <a href="#windows">Opportunity windows</a>
+    <a href="#compare">Compare scenarios</a>
+    <a href="#explorer">Polar site explorer</a>
+    <a href="#science">Science & model</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow">LUNAR SOUTH POLE <span> / </span> MISSION INTELLIGENCE PLATFORM</div>
+      <h2>See the Moon differently.<br><em>Plan beyond the horizon.</em></h2>
+      <p>Every landing site tells a different story of sunlight and Earth visibility. LUNARA brings the mission environment into one clear picture—helping teams compare locations, test schedule changes and uncover the operational windows that matter.</p>
+      <div class="hero-tags"><span><i></i> LIGHTING ANALYSIS</span><span><i></i> EARTH VISIBILITY</span><span><i></i> SCENARIO COMPARISON</span></div>
+    </div>
+    <div class="hero-side">
+      <div class="hero-stat"><strong>90°S</strong><span>THE POLAR FRONTIER</span></div>
+      <div class="hero-stat"><strong>03</strong><span>SITE SCENARIOS</span></div>
+      <div class="hero-stat"><strong>72H</strong><span>PLANNING HORIZON</span></div>
+      <div class="hero-stat"><strong>SUN + EARTH</strong><span>ONE MISSION VIEW</span></div>
+    </div>
+  </section>
+
+  <div class="grid" id="workspace">
+    <aside class="panel">
+      <div class="panel-head"><h3>Scenario setup</h3><small>INPUT / 01</small></div>
+      <div class="panel-body">
+        <div class="section-kicker">Landing site</div>
+        <div class="field"><label for="preset">Reference site</label><select id="preset">
+          <option value="custom">Custom coordinates</option>
+          <option value="shackleton">Shackleton region · LUNARA reference</option>
+          <option value="apollo">Apollo 11 · historical reference</option>
+          <option value="huygens">Mount Huygens · topographic reference</option>
+          <option value="marius">Marius Hills · equatorial reference</option>
+        </select></div>
+        <div class="field"><label for="siteName">Scenario name</label><input id="siteName" value="Shackleton · reference" maxlength="50"></div>
+        <div class="field-row">
+          <div class="field"><label for="lat">Planetocentric latitude (°)</label><input id="lat" type="number" min="-90" max="90" step="0.001" value="-89.5"></div>
+          <div class="field"><label for="lon">Longitude (°)</label><input id="lon" type="number" min="-180" max="180" step="0.001" value="0"></div>
+        </div>
+        <div class="field"><label for="alt">Altitude above ellipsoid (km)</label><input id="alt" type="number" min="-5" max="15" step="0.001" value="0"></div>
+        <div class="field-note">Convention: planetocentric latitude, east-positive longitude. Preset coordinates are starting points, not certified landing sites.</div>
+
+        <hr class="divider"><div class="section-kicker">Date & duration</div>
+        <div class="field"><label for="date">Mission start (UTC)</label><input id="date" type="datetime-local" value="2026-11-10T12:00" step="60"></div>
+        <div class="field"><label for="duration">Analysis window</label><select id="duration"><option value="24">24 hours</option><option value="48">48 hours</option><option value="72">72 hours</option></select></div>
+        <div class="field"><label for="sampleStep">Display time step</label><select id="sampleStep"><option value="10">10 min (interpolated)</option><option value="15" selected>15 min (interpolated)</option><option value="30">30 min (interpolated)</option><option value="60">60 min (source samples)</option></select></div>
+        <div class="btn-row"><button class="btn primary full" id="calculate">⟳ Run analysis</button><button class="btn ghost" id="addCompare">＋ Add to comparison</button></div>
+
+        <hr class="divider"><div class="section-kicker">Solar array model</div>
+        <div class="field-row">
+          <div class="field"><label for="tilt">Panel tilt (°)</label><input id="tilt" type="number" min="0" max="90" value="0" step="1"></div>
+          <div class="field"><label for="panelAz">Panel azimuth (°)</label><input id="panelAz" type="number" min="0" max="359" value="0" step="1"></div>
+        </div>
+        <div class="field"><label for="efficiency">Panel efficiency (%)</label><input id="efficiency" type="number" min="1" max="50" value="29" step="1"></div>
+        <div class="field-note">Geometric estimate of irradiance and power per m². Does not include dust, degradation, temperature, lander shadows or power electronics.</div>
+
+        <hr class="divider"><div class="section-kicker">Scientific data</div>
+        <div class="field"><label class="file-label btn ghost full">⇧ Load positions.json (SPICE)<input id="dataFile" type="file" accept=".json,application/json"></label></div>
+        <div class="field"><label class="file-label btn ghost full">⇧ Load local horizon CSV<input id="horizonFile" type="file" accept=".csv,text/csv"></label></div>
+        <div class="btn-row"><button class="btn small ghost" id="downloadHorizonTemplate">CSV template</button><button class="btn small ghost" id="resetDemo">Reset to demo</button></div>
+        <div id="dataMessage" class="status-note warn">Demo mode: values are synthetic and are only intended for exploring the interface. Load a SPICE-generated positions.json file for ephemeris-based results.</div>
+        <div id="terrainMessage" class="status-note">Horizon: flat local horizon (0°). No LOLA/DEM profiles or terrain obstructions are loaded.</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="kpis">
+        <div class="kpi"><div class="label">Sun above horizon</div><strong class="sun-text" id="kpiSun">—</strong><small id="kpiSunSub">elevation at selected time</small></div>
+        <div class="kpi"><div class="label">Earth above horizon</div><strong class="earth-text" id="kpiEarth">—</strong><small id="kpiEarthSub">geometric disk visibility</small></div>
+        <div class="kpi"><div class="label">Array irradiance</div><strong class="green-text" id="kpiPower">—</strong><small id="kpiPowerSub">estimated power per m²</small></div>
+        <div class="kpi"><div class="label">Radio delay (round trip)</div><strong id="kpiDelay">—</strong><small>vacuum propagation, geometric distance × 2</small></div>
+      </div>
+
+      <div class="visual-grid" id="visuals">
+        <section class="panel"><div class="panel-head"><h3>Local sky · 3D</h3><small>AZIMUTH · ELEVATION</small></div><div class="scene-wrap" id="skyScene"><div class="scene-label">View from the mission site</div><div class="scene-status" id="skyStatus">Awaiting analysis</div><div class="scene-help">Drag to rotate · scroll to zoom</div></div><div class="legend"><span><i style="background:#ffc66d"></i> Sun</span><span><i style="background:#55b9ff"></i> Earth</span><span><i style="background:#5ce0ae"></i> visible horizon</span><span><i style="background:#8293aa"></i> schematic terrain</span></div></section>
+        <section class="panel"><div class="panel-head"><h3>Lunar location · 3D</h3><small>SITE LOCATION</small></div><div class="scene-wrap" id="moonScene"><div class="scene-label">Moon · selected site</div><div class="scene-status" id="moonStatus">Spherical model</div><div class="scene-help">Drag to orbit · scroll to zoom</div></div><div class="legend"><span><i style="background:#ff9e73"></i> selected landing site</span><span class="inline-note">Illustrative global relief; not LOLA topography.</span></div></section>
+      </div>
+
+      <div class="metrics-row">
+        <section class="metric-card"><div class="metric-title"><strong class="sun-text">☼ SOLAR ENVIRONMENT</strong><span id="sunFlag" class="flag neutral">No data</span></div><div class="big-reading" id="sunElevation">—</div><div class="sub-reading">Solar center elevation · azimuth <b id="sunAzimuth">—</b></div><div class="metric-line"><span>Time with solar center visible</span><b id="sunHours">—</b></div><div class="metric-line"><span>Time with solar disk visible</span><b id="sunLimbHours">—</b></div><div class="metric-line"><span>Peak elevation in window</span><b id="sunMax">—</b></div><div class="metric-line"><span>Peak estimated output</span><b id="powerMax">—</b></div><div class="metric-line"><span>Next horizon crossing</span><b id="sunNext">—</b></div></section>
+        <section class="metric-card"><div class="metric-title"><strong class="earth-text">◎ EARTH GEOMETRY</strong><span id="earthFlag" class="flag neutral">No data</span></div><div class="big-reading" id="earthElevation">—</div><div class="sub-reading">Earth center elevation · azimuth <b id="earthAzimuth">—</b></div><div class="metric-line"><span>Earth center visible</span><b id="earthHours">—</b></div><div class="metric-line"><span>Earth disk partially visible</span><b id="earthLimbHours">—</b></div><div class="metric-line"><span>Peak elevation in window</span><b id="earthMax">—</b></div><div class="metric-line"><span>Earth-to-site distance</span><b id="earthDistance">—</b></div><div class="metric-line"><span>Next horizon crossing</span><b id="earthNext">—</b></div></section>
+      </div>
+
+      <section class="panel" style="margin-bottom:15px"><div class="panel-head"><h3>Environment timeline · elevation</h3><small id="chartSubtitle">SELECTED WINDOW · UTC</small></div><div class="chart-box"><canvas id="elevationChart" class="chart-canvas" width="1100" height="290"></canvas><div class="chart-legend"><span><i style="background:#ffc66d"></i> Solar elevation</span><span><i style="background:#55b9ff"></i> Earth elevation</span><span><i style="background:#8090a8"></i> Horizon / terrain profile</span></div></div></section>
+
+      <section class="panel" id="windows"><div class="panel-head"><h3>Opportunity windows</h3><small>GEOMETRIC VISIBILITY · NOT AN RF LINK</small></div><div class="timeline" id="timeline"><div class="track"><span class="track-name">Sun</span><div class="track-bar"></div></div><div class="track"><span class="track-name">Earth</span><div class="track-bar"></div></div></div><div class="time-control"><input id="timeSlider" type="range" min="0" max="100" value="0"><span class="time-label" id="timeReadout">—</span><button id="play" class="btn small ghost">▶ Play</button></div></section>
+
+      <div class="bottom-grid">
+        <section class="panel" id="compare"><div class="panel-head"><h3>Scenario comparison</h3><small>UP TO 3 SITES / DATES</small></div><div class="panel-body"><div id="compareList" class="compare-list"><div class="compare-empty">Add this scenario, then try another landing site or date.</div></div><div class="table-wrap" style="margin-top:13px"><table class="data-table"><thead><tr><th>Scenario</th><th>Sun visible</th><th>Earth · disk</th><th>Max W/m²</th></tr></thead><tbody id="compareTable"><tr><td colspan="4" style="color:#8194ad">No scenarios have been compared yet.</td></tr></tbody></table></div><div class="btn-row" style="margin-top:10px"><button id="clearCompare" class="btn small ghost">Clear comparison</button><button id="exportCompare" class="btn small ghost">Export CSV</button></div></div></section>
+        <section class="panel" id="explorer"><div class="panel-head"><h3>Candidate explorer</h3><small>POLAR REGION · RAPID SCREENING</small></div><div class="panel-body"><p class="inline-note" style="margin-top:0">Scan a coordinate grid across the polar region and rank candidate sites by geometric conditions. Results inherit the quality and coverage of the loaded dataset.</p><div class="search-controls"><div class="field"><label for="minSun">Sun center visible (h)</label><input id="minSun" type="number" min="0" max="72" value="8"></div><div class="field"><label for="minEarth">Earth disk visible (h)</label><input id="minEarth" type="number" min="0" max="72" value="4"></div><div class="field"><label for="maxLat">Northern latitude limit (°)</label><input id="maxLat" type="number" min="-89" max="-70" value="-85"></div><div class="field"><label for="gridStep">Grid spacing (°)</label><select id="gridStep"><option value="2">2° · fine</option><option value="5" selected>5° · standard</option><option value="10">10° · fast</option></select></div></div><button id="searchCandidates" class="btn primary full" style="margin-top:10px">⌕ Find candidate sites</button><div id="searchResults" class="search-results"><div class="compare-empty" style="grid-column:1/-1">Run the screening analysis to discover alternatives near the lunar south pole.</div></div></div></section>
+      </div>
+
+      <section class="panel" id="science" style="margin-top:15px"><div class="panel-head"><h3>Scientific scope & limitations</h3><small>MODEL TRACEABILITY</small></div><div class="panel-body"><div class="technical"><div class="tech-item"><strong>Ephemeris / geometry</strong><p>With positions.json: Sun and Earth vectors precomputed by SPICE in IAU_MOON. Linear interpolation is performed within dataset coverage; no extrapolation is applied beyond the available range.</p></div><div class="tech-item"><strong>Horizon / terrain</strong><p>Without a profile: ideal tangential horizon. With CSV: local horizon-elevation mask by azimuth. LOLA DEM integration is still required for terrain-realistic occultation.</p></div><div class="tech-item"><strong>Communications</strong><p>Visible Earth disk is a preliminary geometric filter. Antennas, RF power, frequency, polarization, ground stations, 3D terrain occultation and link budget are not modeled.</p></div><div class="tech-item"><strong>Power</strong><p>Irradiance is projected onto a flat panel with configurable tilt, azimuth and efficiency. This is not a substitute for an electrical/thermal spacecraft power-system model.</p></div><div class="tech-item"><strong>Thermal environment</strong><p>No falsely precise surface temperature is displayed. A thermal model needs thermal inertia, conductivity, emissivity, albedo, regolith properties and topography.</p></div><div class="tech-item"><strong>Data quality</strong><p>Time resolution and coverage are determined by the loaded file. 3D models in this version are illustrative, not a certified topographic mesh.</p></div></div><div id="scienceNotice" class="status-note warn" style="margin-top:13px">IMPORTANT: demo data must not be used for mission decisions. Load a validated SPICE dataset and a LOLA-derived horizon profile for a more realistic assessment.</div></div></section>
+    </main>
+  </div>
+  <div class="footer">LUNARA · Lunar mission planning prototype · Not a certified flight engineering system.</div>
+</div>
+
+<script type="module">
+let THREE = null;
+try { THREE = await Promise.race([import('three'), new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out loading Three.js')), 2500))]); } catch (error) { console.warn('Three.js is unavailable; switching to the 2D fallback view.', error); }
+
+// -----------------------------------------------------------------------------
+// State and constants
+// -----------------------------------------------------------------------------
+const J2000_MS = Date.UTC(2000,0,1,12,0,0);
+const AU_KM = 149597870.7, SUN_RADIUS_KM = 695700, EARTH_RADIUS_KM = 6371;
+const SOLAR_CONSTANT = 1361, C_KM_S = 299792.458;
+const MOON_A_DEFAULT = 1738.1, MOON_C_DEFAULT = 1736.0;
+const PRESETS = {
+  shackleton:{name:'Shackleton · reference',lat:-89.5,lon:0,alt:0},
+  apollo:{name:'Apollo 11 · historical reference',lat:0.67,lon:23.47,alt:0},
+  huygens:{name:'Mount Huygens · topographic reference',lat:19.9,lon:-2.9,alt:5.5},
+  marius:{name:'Marius Hills · equatorial reference',lat:14,lon:-56,alt:0}
+};
+let ephemeris = null, dataMode = 'demo', currentScenario = null, rows = [], comparison = [], horizonProfile = null, horizonProfileSite = null;
+let currentIndex = 0, playTimer = null, sky3d = null, moon3d = null, fallbackVisuals = null;
+const $ = id => document.getElementById(id);
+const number = (v,d=1) => Number.isFinite(v) ? v.toFixed(d) : '—';
+const wrap360 = a => ((a%360)+360)%360;
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const vec = (x,y,z) => new THREE.Vector3(x,y,z);
+const add = (a,b) => [a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+const sub = (a,b) => [a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const scale = (a,s) => [a[0]*s,a[1]*s,a[2]*s];
+const dot = (a,b) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const norm = a => Math.hypot(a[0],a[1],a[2]);
+const unit = a => {const n=norm(a)||1;return scale(a,1/n)};
+const cross = (a,b) => [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+function utcToSec(dateValue){return (new Date(dateValue+'Z').getTime()-J2000_MS)/1000;}
+function isoAt(ms){return new Date(ms).toISOString().replace('T',' ').slice(0,19)+' UTC';}
+function fmtHours(mins){return `${Math.floor(mins/60)}h ${String(Math.round(mins%60)).padStart(2,'0')}m`;}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+// -----------------------------------------------------------------------------
+// Synthetic demo. Always labeled; it is not a substitute for SPICE ephemerides.
+// -----------------------------------------------------------------------------
+function syntheticVectors(dateMs){
+  const days=(dateMs-J2000_MS)/86400000;
+  const syn=29.530588853, anomalistic=27.55455, draconic=27.21222;
+  const sunLon=wrap360((days/syn*360)+145);
+  const sunLat=1.54*Math.sin(2*Math.PI*days/draconic+0.4);
+  const earthLon=7.2*Math.sin(2*Math.PI*days/27.55+0.8)+1.8*Math.sin(2*Math.PI*days/365.25);
+  const earthLat=6.7*Math.sin(2*Math.PI*days/draconic+1.1);
+  const toVec=(lat,lon,r)=>{const p=lat*Math.PI/180,l=lon*Math.PI/180;return [r*Math.cos(p)*Math.cos(l),r*Math.cos(p)*Math.sin(l),r*Math.sin(p)]};
+  const au=1.0+0.0167*Math.cos(2*Math.PI*days/365.256);
+  const sun=toVec(sunLat,sunLon,AU_KM*au);
+  const earth=toVec(earthLat,earthLon,384400+21000*Math.cos(2*Math.PI*days/anomalistic));
+  return {sun,earth};
+}
+function demoSampleAt(sec){return syntheticVectors(J2000_MS+sec*1000);}
+
+// -----------------------------------------------------------------------------
+// Ingest and validate positions.json (original LUNARA or v2 format).
+// -----------------------------------------------------------------------------
+function normalizeDataset(raw){
+  const samples=Array.isArray(raw)?raw:(raw?.samples||raw?.data||[]);
+  if(!Array.isArray(samples)||samples.length<2)throw new Error('The JSON must contain at least two valid samples.');
+  const normalized=samples.map((r,i)=>{
+    const t=Number(r.t_utc_s ?? r.t ?? (r.utc?((Date.parse(r.utc)-J2000_MS)/1000):NaN));
+    const sun=r.sun||r.sun_moon_km, earth=r.earth||r.earth_moon_km;
+    if(!Number.isFinite(t)||!Array.isArray(sun)||!Array.isArray(earth)||sun.length<3||earth.length<3)throw new Error(`Sample ${i} is incomplete: t, sun[3] and earth[3] are required.`);
+    if(![...sun.slice(0,3),...earth.slice(0,3)].every(Number.isFinite))throw new Error(`Sample ${i} contains non-numeric vectors.`);
+    return {t,sun:sun.slice(0,3).map(Number),earth:earth.slice(0,3).map(Number)};
+  }).sort((a,b)=>a.t-b.t);
+  for(let i=1;i<normalized.length;i++)if(normalized[i].t<=normalized[i-1].t)throw new Error('Timestamps must be unique and strictly increasing.');
+  const meta=Array.isArray(raw)?{}:(raw.meta||raw.metadata||{});
+  const stepMedian=normalized.slice(1).map((r,i)=>r.t-normalized[i].t).sort((a,b)=>a-b)[Math.floor((normalized.length-2)/2)];
+  return {samples:normalized,meta,step:stepMedian||3600,start:normalized[0].t,end:normalized.at(-1).t};
+}
+function interpolateVector(sec,key){
+  if(!ephemeris) return demoSampleAt(sec)[key];
+  const a=ephemeris.samples;
+  if(sec<a[0].t-1e-6||sec>a.at(-1).t+1e-6)throw new Error('Date is outside SPICE file coverage. Positions are not extrapolated.');
+  let lo=0,hi=a.length-1;
+  while(hi-lo>1){const mid=(lo+hi)>>1;if(a[mid].t<=sec)lo=mid;else hi=mid;}
+  if(Math.abs(sec-a[lo].t)<1e-6)return a[lo][key];
+  if(Math.abs(sec-a[hi].t)<1e-6)return a[hi][key];
+  const f=(sec-a[lo].t)/(a[hi].t-a[lo].t);
+  return a[lo][key].map((v,i)=>v+(a[hi][key][i]-v)*f);
+}
+
+// -----------------------------------------------------------------------------
+// Local ellipsoidal geometry: planetocentric latitude input, IAU_MOON frame.
+// -----------------------------------------------------------------------------
+function getMoonRadii(){
+  const m=ephemeris?.meta||{};
+  const rr=m.moon_radii_km||m.radii_km;
+  if(Array.isArray(rr)&&rr.length>=3)return {a:Number(rr[0]),b:Number(rr[1]),c:Number(rr[2])};
+  return {a:MOON_A_DEFAULT,b:MOON_A_DEFAULT,c:MOON_C_DEFAULT};
+}
+function surfaceFrame(latDeg,lonDeg,altKm){
+  const {a,b,c}=getMoonRadii(),lat=latDeg*Math.PI/180,lon=lonDeg*Math.PI/180;
+  const cp=Math.cos(lat),sp=Math.sin(lat),cl=Math.cos(lon),sl=Math.sin(lon);
+  // Intersection of the planetocentric ray with the triaxial ellipsoid.
+  const r=1/Math.sqrt((cp*cl)**2/(a*a)+(cp*sl)**2/(b*b)+(sp*sp)/(c*c));
+  let site=[r*cp*cl,r*cp*sl,r*sp];
+  const up=unit([site[0]/(a*a),site[1]/(b*b),site[2]/(c*c)]);
+  site=add(site,scale(up,altKm));
+  const east=unit([-sl,cl,0]);
+  const north=unit(cross(up,east));
+  return {site,up,east,north};
+}
+function horizonAt(az){
+  if(!horizonProfile?.length)return 0;
+  const sorted=horizonProfile; const a=wrap360(az);
+  let hi=sorted.findIndex(p=>p.az>=a);if(hi<0)hi=0;
+  const lo=(hi-1+sorted.length)%sorted.length,p0=sorted[lo],p1=sorted[hi];
+  let a0=p0.az,a1=p1.az,aa=a;
+  if(hi===0)a1+=360;if(a<a0)aa+=360;
+  if(Math.abs(a1-a0)<1e-9)return p0.el;
+  const f=clamp((aa-a0)/(a1-a0),0,1);return p0.el+(p1.el-p0.el)*f;
+}
+function targetGeometry(position,frame,bodyRadius,site,useTerrain=true){
+  const v=sub(position,frame.site),distance=norm(v),u=unit(v);
+  const n=dot(u,frame.north),e=dot(u,frame.east),up=dot(u,frame.up);
+  const elevation=Math.atan2(up,Math.hypot(n,e))*180/Math.PI;
+  const azimuth=wrap360(Math.atan2(e,n)*180/Math.PI);
+  const angularRadius=Math.asin(clamp(bodyRadius/Math.max(distance,bodyRadius),-1,1))*180/Math.PI;
+  const sameSite=horizonProfileSite&&Math.abs(site.lat-horizonProfileSite.lat)<1e-5&&Math.abs(site.lon-horizonProfileSite.lon)<1e-5;
+  const h=(useTerrain&&horizonProfile&&sameSite)?horizonAt(azimuth):0;
+  return {elevation,azimuth,distance,angularRadius,horizon:h,centerVisible:elevation>h,limbVisible:elevation+angularRadius>h,fullDiskVisible:elevation-angularRadius>h,clearance:elevation-h,vector:u};
+}
+function panelNormal(tiltDeg,azDeg,frame){
+  const t=tiltDeg*Math.PI/180,a=azDeg*Math.PI/180;
+  return unit(add(add(scale(frame.up,Math.cos(t)),scale(frame.north,Math.sin(t)*Math.cos(a))),scale(frame.east,Math.sin(t)*Math.sin(a))));
+}
+function computeInstant(sec,site,useTerrain=true){
+  const frame=surfaceFrame(site.lat,site.lon,site.alt);
+  const sunPos=interpolateVector(sec,'sun'),earthPos=interpolateVector(sec,'earth');
+  const sun=targetGeometry(sunPos,frame,SUN_RADIUS_KM,site,useTerrain),earth=targetGeometry(earthPos,frame,EARTH_RADIUS_KM,site,useTerrain);
+  const solarNormal=panelNormal(site.tilt,site.panelAz,frame);
+  const cosInc=sun.centerVisible?Math.max(0,dot(sun.vector,solarNormal)):0;
+  const irradiance=SOLAR_CONSTANT*Math.pow(AU_KM/norm(sub(sunPos,frame.site)),2)*cosInc;
+  const output=irradiance*(site.efficiency/100);
+  return {sec,dateMs:J2000_MS+sec*1000,sun,earth,irradiance,output,roundTrip:2*earth.distance/C_KM_S};
+}
+function makeRows(site,startMs,hours,stepMin,useTerrain=true){
+  const start=(startMs-J2000_MS)/1000,end=start+hours*3600,step=stepMin*60,out=[];
+  if(ephemeris&&(start<ephemeris.start-1e-6||end>ephemeris.end+1e-6))throw new Error(`The full UTC window is not covered. File coverage: ${isoAt(J2000_MS+ephemeris.start*1000)} — ${isoAt(J2000_MS+ephemeris.end*1000)}.`);
+  for(let t=start;t<end-1e-6;t+=step)out.push(computeInstant(t,site,useTerrain));
+  out.push(computeInstant(end,site,useTerrain));return out;
+}
+function intervalsFor(data,predicate){
+  const ints=[];let start=null;
+  for(let i=0;i<data.length;i++){
+    const yes=predicate(data[i]);
+    if(yes&&start===null)start=data[i].sec;
+    const last=i===data.length-1;
+    if(start!==null&&(!yes||last)){
+      let end=yes&&last?data[i].sec:data[i-1].sec;
+      if(i>0&&!yes){const p=data[i-1],c=data[i];const v0=p._metric??predicate.metric?.(p)??1,v1=c._metric??predicate.metric?.(c)??-1;let f=.5;if(Number.isFinite(v0)&&Number.isFinite(v1)&&v0!==v1)f=clamp(v0/(v0-v1),0,1);end=p.sec+(c.sec-p.sec)*f;}
+      if(end>=start)ints.push({start,end,minutes:(end-start)/60});start=null;
+    }
+  }
+  return ints;
+}
+function calculateSummary(data){
+  const durationMin=(data.at(-1).sec-data[0].sec)/60;
+  const sunCenterIntervals=buildIntervals(data,r=>r.sun.elevation-r.sun.horizon);
+  const sunLimbIntervals=buildIntervals(data,r=>r.sun.elevation+r.sun.angularRadius-r.sun.horizon);
+  const earthCenterIntervals=buildIntervals(data,r=>r.earth.elevation-r.earth.horizon);
+  const earthLimbIntervals=buildIntervals(data,r=>r.earth.elevation+r.earth.angularRadius-r.earth.horizon);
+  const hours=ints=>ints.reduce((sum,it)=>sum+it.minutes,0)/60;
+  const sunCenter=hours(sunCenterIntervals),sunLimb=hours(sunLimbIntervals);
+  const earthCenter=hours(earthCenterIntervals),earthLimb=hours(earthLimbIntervals);
+  const maxSun=data.reduce((a,b)=>b.sun.elevation>a.sun.elevation?b:a),maxEarth=data.reduce((a,b)=>b.earth.elevation>a.earth.elevation?b:a),maxPower=data.reduce((a,b)=>b.output>a.output?b:a);
+  return {durationMin,sunCenter,sunLimb,earthCenter,earthLimb,maxSun,maxEarth,maxPower,sunCenterIntervals,sunLimbIntervals,earthCenterIntervals,earthLimbIntervals};
+}
+function durationHours(data,pred){
+  let mins=0;for(let i=1;i<data.length;i++){const dt=(data[i].sec-data[i-1].sec)/60;if(pred(data[i-1])&&pred(data[i]))mins+=dt;else if(pred(data[i-1])!==pred(data[i]))mins+=dt*.5;}return mins/60;
+}
+function buildIntervals(data,metricFn){
+  const out=[];if(!data.length)return out;
+  let active=metricFn(data[0])>0,start=active?data[0].sec:null;
+  for(let i=1;i<data.length;i++){
+    const p=data[i-1],c=data[i],v0=metricFn(p),v1=metricFn(c),pOn=v0>0,cOn=v1>0;
+    if(!pOn&&cOn){const f=clamp(v0/(v0-v1),0,1);start=p.sec+(c.sec-p.sec)*f;active=true;}
+    else if(pOn&&!cOn){const f=clamp(v0/(v0-v1),0,1),crossing=p.sec+(c.sec-p.sec)*f;if(active&&start!==null)out.push({start,end:crossing,minutes:(crossing-start)/60});active=false;start=null;}
+  }
+  if(active&&start!==null){const end=data.at(-1).sec;out.push({start,end,minutes:(end-start)/60});}
+  return out;
+}
+function nextCrossing(ints,nowSec){
+  for(const it of ints){if(it.start>nowSec+1)return {label:'Rises',sec:it.start};if(it.end>nowSec+1)return {label:'Sets',sec:it.end};}
+  return null;
+}
+function dateFromSec(sec){return new Date(J2000_MS+sec*1000).toISOString();}
+function localTime(sec){const d=new Date(J2000_MS+sec*1000);return d.toISOString().slice(11,16)+' UTC';}
+
+// -----------------------------------------------------------------------------
+// UI rendering
+// -----------------------------------------------------------------------------
+function setFlag(id,kind,label){$(id).className=`flag ${kind}`;$(id).textContent=label;}
+function renderMetrics(row,summary){
+  const sun=row.sun,earth=row.earth;
+  $('kpiSun').textContent=`${number(sun.elevation,1)}°`;
+  $('kpiSunSub').textContent=`Az ${number(sun.azimuth,0)}° · ${sun.centerVisible?'center visible':'center below horizon'}`;
+  $('kpiEarth').textContent=`${number(earth.elevation,1)}°`;
+  $('kpiEarthSub').textContent=`Disk ${earth.limbVisible?'partially / fully visible':'geometrically occulted'}`;
+  $('kpiPower').textContent=`${number(row.output,0)} W/m²`;
+  $('kpiPowerSub').textContent=`Incident irradiance ${number(row.irradiance,0)} W/m²`;
+  $('kpiDelay').textContent=`${number(row.roundTrip,2)} s`;
+  $('sunElevation').textContent=`${number(sun.elevation,2)}°`;$('sunAzimuth').textContent=`${number(sun.azimuth,1)}°`;
+  $('earthElevation').textContent=`${number(earth.elevation,2)}°`;$('earthAzimuth').textContent=`${number(earth.azimuth,1)}°`;
+  $('sunHours').textContent=fmtHours(summary.sunCenter*60);$('sunLimbHours').textContent=fmtHours(summary.sunLimb*60);
+  $('earthHours').textContent=fmtHours(summary.earthCenter*60);$('earthLimbHours').textContent=fmtHours(summary.earthLimb*60);
+  $('sunMax').textContent=`${number(summary.maxSun.sun.elevation,1)}° · ${localTime(summary.maxSun.sec)}`;
+  $('earthMax').textContent=`${number(summary.maxEarth.earth.elevation,1)}° · ${localTime(summary.maxEarth.sec)}`;
+  $('powerMax').textContent=`${number(summary.maxPower.output,0)} W/m²`;
+  $('earthDistance').textContent=`${number(row.earth.distance,0)} km`;
+  const ns=nextCrossing(summary.sunLimbIntervals,row.sec),ne=nextCrossing(summary.earthLimbIntervals,row.sec);
+  $('sunNext').textContent=ns?`${ns.label} ${localTime(ns.sec)}`:'No upcoming crossing';$('earthNext').textContent=ne?`${ne.label} ${localTime(ne.sec)}`:'No upcoming crossing';
+  setFlag('sunFlag',sun.centerVisible?'good':sun.limbVisible?'partial':'bad',sun.centerVisible?'Center visible':sun.limbVisible?'Limb only':'Below horizon');
+  setFlag('earthFlag',earth.limbVisible?'good':'bad',earth.fullDiskVisible?'Full disk':earth.limbVisible?'Partial disk':'Disk occulted');
+}
+function drawChart(data,idx){
+  const canvas=$('elevationChart'),ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,pad={l:50,r:18,t:15,b:33};ctx.clearRect(0,0,w,h);
+  const x=i=>pad.l+i/(data.length-1)*(w-pad.l-pad.r),y=v=>pad.t+(90-clamp(v,-90,90))/180*(h-pad.t-pad.b);
+  ctx.fillStyle='#100b1d';ctx.fillRect(0,0,w,h);
+  ctx.font='12px "IBM Plex Mono", monospace';ctx.textAlign='right';ctx.textBaseline='middle';
+  for(let v=-90;v<=90;v+=30){ctx.strokeStyle=v===0?'#c7b3e6':'#403052';ctx.lineWidth=v===0?1.7:1;ctx.beginPath();ctx.moveTo(pad.l,y(v));ctx.lineTo(w-pad.r,y(v));ctx.stroke();ctx.fillStyle='#a895bd';ctx.fillText(`${v}°`,pad.l-9,y(v));}
+  ctx.textAlign='center';ctx.textBaseline='top';for(let k=0;k<=6;k++){const i=Math.round(k*(data.length-1)/6);ctx.strokeStyle='#2c203e';ctx.beginPath();ctx.moveTo(x(i),pad.t);ctx.lineTo(x(i),h-pad.b);ctx.stroke();ctx.fillStyle='#a895bd';ctx.fillText(localTime(data[i].sec),x(i),h-pad.b+8);}
+  if(horizonProfile){ctx.strokeStyle='#8d9fb9';ctx.setLineDash([4,4]);ctx.beginPath();data.forEach((r,i)=>{const val=r.sun.horizon;i?ctx.lineTo(x(i),y(val)):ctx.moveTo(x(i),y(val));});ctx.stroke();ctx.setLineDash([]);}
+  const line=(getter,color)=>{ctx.strokeStyle=color;ctx.lineWidth=2.4;ctx.beginPath();data.forEach((r,i)=>{const yy=y(getter(r));i?ctx.lineTo(x(i),yy):ctx.moveTo(x(i),yy);});ctx.stroke();};
+  line(r=>r.sun.elevation,'#ffc66d');line(r=>r.earth.elevation,'#55b9ff');
+  const ix=x(idx);ctx.strokeStyle='#e5eef7';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(ix,pad.t);ctx.lineTo(ix,h-pad.b);ctx.stroke();ctx.setLineDash([]);
+  for(const [get,color] of [[r=>r.sun.elevation,'#ffc66d'],[r=>r.earth.elevation,'#55b9ff']]){ctx.fillStyle=color;ctx.beginPath();ctx.arc(ix,y(get(data[idx])),4.5,0,Math.PI*2);ctx.fill();}
+}
+function makeTrack(label,intervals,color,start,end){
+  const width=end-start,segments=intervals.map(it=>{const left=clamp((it.start-start)/width*100,0,100),right=clamp((it.end-start)/width*100,0,100);return `<i class="segment" style="left:${left}%;width:${Math.max(0,right-left)}%;background:${color}"></i>`;}).join('');
+  return `<div class="track"><span class="track-name">${label}</span><div class="track-bar">${segments}</div></div>`;
+}
+function renderTimeline(summary,data){
+  const start=data[0].sec,end=data.at(-1).sec;
+  $('timeline').innerHTML=makeTrack('Sun · disk',summary.sunLimbIntervals,'linear-gradient(90deg,#f2a93f,#ffe18b)',start,end)+makeTrack('Earth · disk',summary.earthLimbIntervals,'linear-gradient(90deg,#2f8ee2,#8ad9ff)',start,end);
+  $('timeSlider').max=String(data.length-1);$('timeSlider').value=String(currentIndex);
+}
+function renderAll(){
+  const row=rows[currentIndex],summary=currentScenario.summary;
+  renderMetrics(row,summary);drawChart(rows,currentIndex);renderTimeline(summary,rows);
+  $('timeReadout').textContent=isoAt(row.dateMs);$('chartSubtitle').textContent=`${currentScenario.site.name} · ${currentScenario.hours} h · UTC`;
+  $('skyStatus').textContent=`Sun ${number(row.sun.elevation,1)}° / Earth ${number(row.earth.elevation,1)}°`;
+  updateSky3D(row);updateMoon3D(currentScenario.site);
+}
+
+// -----------------------------------------------------------------------------
+// Three.js: local 3D sky with schematic procedural terrain.
+// -----------------------------------------------------------------------------
+function makeLabelSprite(text,color){const c=document.createElement('canvas');c.width=320;c.height=90;const x=c.getContext('2d');x.fillStyle='rgba(12,7,25,.90)';x.fillRect(3,3,314,84);x.strokeStyle=color;x.lineWidth=4;x.strokeRect(3,3,314,84);x.fillStyle=color;x.font='600 34px "Space Grotesk", sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,160,45);const tex=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));s.scale.set(25,7,1);return s;}
+function makeStarField(scene){const g=new THREE.BufferGeometry(),p=[];for(let i=0;i<1100;i++){const u=Math.random()*2-1,a=Math.random()*Math.PI*2,r=170,xy=Math.sqrt(1-u*u);p.push(r*xy*Math.cos(a),r*u,r*xy*Math.sin(a));}g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xd8e8ff,size:0.8,transparent:true,opacity:.78})));}
+function makeGround(scene){
+  const geometry=new THREE.CircleGeometry(120,128),mat=new THREE.MeshStandardMaterial({color:0x333d4b,roughness:1,metalness:0});const ground=new THREE.Mesh(geometry,mat);ground.rotation.x=-Math.PI/2;ground.position.y=-13;scene.add(ground);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(118,120,128),new THREE.MeshBasicMaterial({color:0x5ce0ae,side:THREE.DoubleSide,transparent:true,opacity:.2}));ring.rotation.x=-Math.PI/2;ring.position.y=-12.7;scene.add(ring);
+  const terrain=new THREE.Group();
+  for(let j=0;j<24;j++){
+    const angle=Math.random()*Math.PI*2,dist=18+Math.random()*72,r=2+Math.random()*8,height=1+Math.random()*5;
+    const g=new THREE.ConeGeometry(r,height,7);const m=new THREE.MeshStandardMaterial({color:j%2?0x4a5360:0x65707e,roughness:1});const hill=new THREE.Mesh(g,m);hill.position.set(Math.cos(angle)*dist,-13+height/2,Math.sin(angle)*dist);hill.rotation.y=Math.random()*Math.PI;terrain.add(hill);
+  }
+  scene.add(terrain);
+  const horizon=new THREE.Mesh(new THREE.TorusGeometry(100,.26,5,160),new THREE.MeshBasicMaterial({color:0x5ce0ae,transparent:true,opacity:.45}));horizon.rotation.x=Math.PI/2;horizon.position.y=-12.7;scene.add(horizon);
+}
+function createSky3D(){
+  if(!THREE) throw new Error('Three.js is unavailable.');
+  const host=$('skyScene');const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b0718);
+  const camera=new THREE.PerspectiveCamera(67,host.clientWidth/host.clientHeight,.1,500);camera.position.set(0,1,0);camera.rotation.order='YXZ';camera.rotation.x=-.045;
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;host.appendChild(renderer.domElement);
+  scene.add(new THREE.AmbientLight(0x8095ad,.65));const light=new THREE.PointLight(0xffffff,900,0);light.position.set(0,100,20);scene.add(light);makeStarField(scene);makeGround(scene);
+  const sun=new THREE.Mesh(new THREE.SphereGeometry(3.4,32,32),new THREE.MeshBasicMaterial({color:0xffc35b}));const sunGlow=new THREE.Mesh(new THREE.SphereGeometry(5.4,24,24),new THREE.MeshBasicMaterial({color:0xffd37d,transparent:true,opacity:.18}));sun.add(sunGlow);scene.add(sun);const sunLabel=makeLabelSprite('SUN','#ffd27a');scene.add(sunLabel);
+  const earth=new THREE.Group();const earthMesh=new THREE.Mesh(new THREE.SphereGeometry(3.7,40,32),new THREE.MeshStandardMaterial({color:0x277ec8,roughness:.7,emissive:0x061a36}));earth.add(earthMesh);const cloud=new THREE.Mesh(new THREE.SphereGeometry(3.78,40,32),new THREE.MeshBasicMaterial({color:0x9edcff,wireframe:true,transparent:true,opacity:.15}));earth.add(cloud);scene.add(earth);const earthLabel=makeLabelSprite('EARTH','#81d4ff');scene.add(earthLabel);
+  let dragging=false,px=0,py=0,yaw=0,pitch=-.05,zoom=1;
+  const down=e=>{dragging=true;px=e.clientX;py=e.clientY;renderer.domElement.setPointerCapture?.(e.pointerId);};
+  const move=e=>{if(!dragging)return;yaw-=(e.clientX-px)*.005;pitch=clamp(pitch+(e.clientY-py)*.005,-1.25,1.25);px=e.clientX;py=e.clientY;camera.rotation.set(pitch,yaw,0,'YXZ');};
+  const up=()=>dragging=false;
+  renderer.domElement.addEventListener('pointerdown',down);renderer.domElement.addEventListener('pointermove',move);renderer.domElement.addEventListener('pointerup',up);renderer.domElement.addEventListener('pointercancel',up);
+  renderer.domElement.addEventListener('wheel',e=>{zoom=clamp(zoom+(e.deltaY>0?.07:-.07),.65,1.7);camera.fov=67/zoom;camera.updateProjectionMatrix();},{passive:true});
+  function positionBody(mesh,label,el,az,r){const e=el*Math.PI/180,a=az*Math.PI/180;const v=new THREE.Vector3(r*Math.cos(e)*Math.sin(a),r*Math.sin(e),-r*Math.cos(e)*Math.cos(a));mesh.position.copy(v);label.position.copy(v.clone().add(new THREE.Vector3(0,8,0)));}
+  function update(row){positionBody(sun,sunLabel,row.sun.elevation,row.sun.azimuth,100);positionBody(earth,earthLabel,row.earth.elevation,row.earth.azimuth,103);}
+  const resize=()=>{const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);};new ResizeObserver(resize).observe(host);
+  const animate=()=>{requestAnimationFrame(animate);earth.rotation.y+=.0015;renderer.render(scene,camera);};animate();return {scene,camera,renderer,update};
+}
+
+// 3D Moon globe: crater-texture is procedural, not LOLA.
+function makeMoonTexture(){const c=document.createElement('canvas');c.width=1024;c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#8c9094';ctx.fillRect(0,0,1024,512);const img=ctx.getImageData(0,0,1024,512);for(let i=0;i<img.data.length;i+=4){const n=(Math.random()-.5)*38;const v=137+n;img.data[i]=v;img.data[i+1]=v;img.data[i+2]=v+3;img.data[i+3]=255;}ctx.putImageData(img,0,0);for(let i=0;i<520;i++){const x=Math.random()*1024,y=Math.random()*512,r=2+Math.random()*20;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle='rgba(35,39,44,.25)';ctx.fill();ctx.beginPath();ctx.arc(x-r*.16,y-r*.16,r*.72,0,Math.PI*2);ctx.strokeStyle='rgba(225,228,229,.26)';ctx.lineWidth=1+Math.random()*2;ctx.stroke();}const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
+function createMoon3D(){
+  if(!THREE) throw new Error('Three.js is unavailable.');
+  const host=$('moonScene'),scene=new THREE.Scene();scene.background=new THREE.Color(0x0b0718);
+  const camera=new THREE.PerspectiveCamera(43,host.clientWidth/host.clientHeight,.1,100);let radius=3.5,theta=.5,phi=1.1;
+  const updateCam=()=>{camera.position.set(radius*Math.sin(phi)*Math.sin(theta),radius*Math.cos(phi),radius*Math.sin(phi)*Math.cos(theta));camera.lookAt(0,0,0);};updateCam();
+  const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;host.appendChild(renderer.domElement);
+  scene.add(new THREE.AmbientLight(0x8da1b8,.75));const key=new THREE.DirectionalLight(0xffe5bb,2.1);key.position.set(3,4,5);scene.add(key);const fill=new THREE.DirectionalLight(0x5284bc,.55);fill.position.set(-4,-1,-3);scene.add(fill);
+  const globe=new THREE.Mesh(new THREE.SphereGeometry(1.27,96,72),new THREE.MeshStandardMaterial({map:makeMoonTexture(),roughness:1}));scene.add(globe);
+  const marker=new THREE.Mesh(new THREE.SphereGeometry(.026,18,12),new THREE.MeshBasicMaterial({color:0xff9872}));scene.add(marker);
+  const markerGlow=new THREE.Mesh(new THREE.SphereGeometry(.048,16,12),new THREE.MeshBasicMaterial({color:0xff9872,transparent:true,opacity:.2}));scene.add(markerGlow);
+  const grid=new THREE.Mesh(new THREE.SphereGeometry(1.282,36,18),new THREE.MeshBasicMaterial({color:0x9fc3dc,wireframe:true,transparent:true,opacity:.075}));scene.add(grid);
+  const axes=new THREE.AxesHelper(1.65);axes.material.transparent=true;axes.material.opacity=.22;scene.add(axes);
+  let dragging=false,px=0,py=0;renderer.domElement.addEventListener('pointerdown',e=>{dragging=true;px=e.clientX;py=e.clientY;renderer.domElement.setPointerCapture?.(e.pointerId);});renderer.domElement.addEventListener('pointermove',e=>{if(!dragging)return;theta-=(e.clientX-px)*.007;phi=clamp(phi+(e.clientY-py)*.007,.15,Math.PI-.15);px=e.clientX;py=e.clientY;updateCam();});renderer.domElement.addEventListener('pointerup',()=>dragging=false);renderer.domElement.addEventListener('pointercancel',()=>dragging=false);renderer.domElement.addEventListener('wheel',e=>{radius=clamp(radius+(e.deltaY>0?.18:-.18),1.8,7);updateCam();},{passive:true});
+  function update(site){const lat=site.lat*Math.PI/180,lon=site.lon*Math.PI/180;const p=new THREE.Vector3(Math.cos(lat)*Math.cos(lon),Math.sin(lat),Math.cos(lat)*Math.sin(lon)).multiplyScalar(1.30);marker.position.copy(p);markerGlow.position.copy(p);$('moonStatus').textContent=`${number(site.lat,2)}° / ${number(site.lon,2)}°`}
+  const resize=()=>{camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();renderer.setSize(host.clientWidth,host.clientHeight);};new ResizeObserver(resize).observe(host);
+  const animate=()=>{requestAnimationFrame(animate);globe.rotation.y+=.0007;grid.rotation.y=globe.rotation.y;renderer.render(scene,camera);};animate();return {scene,camera,renderer,update};
+}
+function updateSky3D(row){if(sky3d)sky3d.update(row);else fallbackVisuals?.updateSky(row)}function updateMoon3D(site){if(moon3d)moon3d.update(site);else fallbackVisuals?.updateMoon(site)}
+function createFallbackVisuals(){
+  function makeCanvas(host){const c=document.createElement('canvas');c.style.width='100%';c.style.height='100%';c.width=host.clientWidth*devicePixelRatio;c.height=host.clientHeight*devicePixelRatio;host.appendChild(c);return c;}
+  const sky=makeCanvas($('skyScene')),moon=makeCanvas($('moonScene'));
+  const skyCtx=sky.getContext('2d'),moonCtx=moon.getContext('2d');
+  function resize(){for(const [c,host] of [[sky,$('skyScene')],[moon,$('moonScene')]]){c.width=Math.max(1,host.clientWidth*devicePixelRatio);c.height=Math.max(1,host.clientHeight*devicePixelRatio);}}
+  new ResizeObserver(resize).observe($('skyScene'));new ResizeObserver(resize).observe($('moonScene'));
+  function drawSky(row){resize();const w=sky.width,h=sky.height,ctx=skyCtx;ctx.clearRect(0,0,w,h);const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#0b0718');bg.addColorStop(.66,'#251638');bg.addColorStop(.67,'#393047');bg.addColorStop(1,'#090612');ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);for(let i=0;i<180;i++){const x=(i*137.5%w),y=(i*67.3%h*.62);ctx.fillStyle=`rgba(210,230,255,${.2+(i%5)*.1})`;ctx.fillRect(x,y,2*devicePixelRatio,2*devicePixelRatio);}const hz=h*.68;ctx.strokeStyle='#5ce0ae';ctx.lineWidth=2*devicePixelRatio;ctx.beginPath();ctx.moveTo(0,hz);ctx.lineTo(w,hz);ctx.stroke();ctx.fillStyle='#393047';ctx.beginPath();ctx.moveTo(0,hz);for(let x=0;x<=w;x+=w/24)ctx.lineTo(x,hz-5*devicePixelRatio-Math.abs(Math.sin(x*.031))*12*devicePixelRatio);ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fill();function body(b,color,label){const az=b.azimuth*Math.PI/180,el=b.elevation*Math.PI/180;const x=w/2+Math.sin(az)*(w*.43),y=hz-Math.tan(el)*(h*.68);ctx.strokeStyle=color;ctx.setLineDash([5*devicePixelRatio,5*devicePixelRatio]);ctx.beginPath();ctx.moveTo(x,hz);ctx.lineTo(x,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=18*devicePixelRatio;ctx.beginPath();ctx.arc(x,y,7*devicePixelRatio,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.font=`bold ${12*devicePixelRatio}px system-ui`;ctx.fillText(`${label} ${number(b.elevation,1)}°`,x+10*devicePixelRatio,y-8*devicePixelRatio);}body(row.sun,'#ffc66d','SUN');body(row.earth,'#55b9ff','EARTH');ctx.fillStyle='#b6a5cc';ctx.font=`${10*devicePixelRatio}px system-ui`;ctx.fillText('N',12*devicePixelRatio,hz+18*devicePixelRatio);ctx.fillText('S',w-20*devicePixelRatio,hz+18*devicePixelRatio);}
+  function drawMoon(site){resize();const w=moon.width,h=moon.height,ctx=moonCtx;ctx.clearRect(0,0,w,h);ctx.fillStyle='#0b0718';ctx.fillRect(0,0,w,h);const r=Math.min(w,h)*.36,cx=w*.5,cy=h*.52;const g=ctx.createRadialGradient(cx-r*.35,cy-r*.4,r*.05,cx,cy,r);g.addColorStop(0,'#bec1c2');g.addColorStop(.65,'#747c84');g.addColorStop(1,'#303946');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();for(let i=0;i<90;i++){const a=i*2.399,rr=Math.sqrt((i+.5)/90)*r*.94,x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr,cr=2+(i*7%13)*devicePixelRatio;ctx.fillStyle='rgba(25,31,39,.22)';ctx.beginPath();ctx.arc(x,y,cr,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(235,238,238,.16)';ctx.stroke();}const lat=site.lat*Math.PI/180,lon=site.lon*Math.PI/180;const x=cx+Math.cos(lat)*Math.sin(lon)*r,y=cy-Math.sin(lat)*r;ctx.fillStyle='#ff9872';ctx.shadowColor='#ff9872';ctx.shadowBlur=20*devicePixelRatio;ctx.beginPath();ctx.arc(x,y,6*devicePixelRatio,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#e9f1fa';ctx.font=`${11*devicePixelRatio}px system-ui`;ctx.fillText(`${number(site.lat,2)}° / ${number(site.lon,2)}°`,x+12*devicePixelRatio,y-9*devicePixelRatio);}
+  return {updateSky:drawSky,updateMoon:drawMoon};
+}
+
+// -----------------------------------------------------------------------------
+// Scenario comparison and candidate explorer.
+// -----------------------------------------------------------------------------
+function scenarioRecord(site,data,summary,startMs,hours){return {site:{...site},data,summary,startMs,hours,mode:dataMode};}
+function addCurrentComparison(){if(!currentScenario)return;const key=currentScenario.site.name+'|'+currentScenario.site.lat+'|'+currentScenario.site.lon+'|'+currentScenario.startMs;if(comparison.some(c=>c.key===key)){showNotice('This scenario is already in the comparison.','warn');return;}if(comparison.length>=3)comparison.shift();comparison.push({...scenarioRecord(currentScenario.site,rows,currentScenario.summary,currentScenario.startMs,currentScenario.hours),key});renderComparison();showNotice('Scenario added to comparison.','good');}
+function renderComparison(){
+  if(!comparison.length){$('compareList').innerHTML='<div class="compare-empty">Add this scenario, then try another landing site or date.</div>';$('compareTable').innerHTML='<tr><td colspan="4" style="color:#8194ad">No scenarios have been compared yet.</td></tr>';return;}
+  $('compareList').innerHTML=comparison.map((c,i)=>`<div class="compare-item"><div><strong>${escapeHtml(c.site.name)}</strong><small>${number(c.site.lat,3)}°, ${number(c.site.lon,3)}° · ${new Date(c.startMs).toISOString().slice(0,16).replace('T',' ')} UTC</small></div><button class="btn small ghost" data-remove="${i}">Remove</button></div>`).join('');
+  $('compareTable').innerHTML=comparison.map(c=>`<tr><td>${escapeHtml(c.site.name)}</td><td class="num">${fmtHours(c.summary.sunCenter*60)}</td><td class="num">${fmtHours(c.summary.earthLimb*60)}</td><td class="num">${number(c.summary.maxPower.output,0)}</td></tr>`).join('');
+  $('compareList').querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{comparison.splice(Number(b.dataset.remove),1);renderComparison()}));
+}
+function candidateGrid(){
+  const reqSun=Number($('minSun').value),reqEarth=Number($('minEarth').value),north=Number($('maxLat').value),step=Number($('gridStep').value);
+  if(!Number.isFinite(reqSun)||!Number.isFinite(reqEarth)||!Number.isFinite(north)||north< -89||north> -70||reqSun<0||reqEarth<0)throw new Error('Invalid search parameters. The northern latitude limit must be between −89° and −70°.');
+  const startMs=new Date($('date').value+':00Z').getTime(),hours=Number($('duration').value),dt=Number($('sampleStep').value);
+  const out=[];
+  for(let lat=-90;lat<=north+1e-6;lat+=step){for(let lon=-180;lon<180;lon+=step){const site={name:`Candidate ${lat.toFixed(1)} / ${lon.toFixed(1)}`,lat,lon,alt:Number($('alt').value),tilt:Number($('tilt').value),panelAz:Number($('panelAz').value),efficiency:Number($('efficiency').value)};try{const d=makeRows(site,startMs,hours,Math.max(30,dt),false);const s=calculateSummary(d);if(s.sunCenter>=reqSun&&s.earthLimb>=reqEarth)out.push({site,s});}catch(e){throw e;}}}
+  out.sort((a,b)=>{const sa=(a.s.sunCenter/Math.max(hours,1))+(a.s.earthLimb/Math.max(hours,1));const sb=(b.s.sunCenter/Math.max(hours,1))+(b.s.earthLimb/Math.max(hours,1));return sb-sa;});return out.slice(0,9);
+}
+function renderCandidates(list){if(!list.length){$('searchResults').innerHTML='<div class="compare-empty" style="grid-column:1/-1">No sites matched both filters on this grid. Lower the thresholds or expand the search region.</div>';return;}
+  $('searchResults').innerHTML=list.map((x,i)=>`<div class="candidate"><strong>#${i+1} · ${number(x.site.lat,1)}°, ${number(x.site.lon,1)}°</strong><p>Planetocentric coordinates · altitude ${number(x.site.alt,2)} km</p><div class="candidate-values"><span>☼ ${fmtHours(x.s.sunCenter*60)}</span><span>◎ ${fmtHours(x.s.earthLimb*60)}</span></div><button class="btn small ghost" data-candidate="${i}">Load site</button></div>`).join('');
+  $('searchResults').querySelectorAll('[data-candidate]').forEach(b=>b.addEventListener('click',()=>{const x=list[Number(b.dataset.candidate)];$('lat').value=x.site.lat;$('lon').value=x.site.lon;$('siteName').value=x.site.name;$('preset').value='custom';calculate();}));
+}
+
+// -----------------------------------------------------------------------------
+// Dataset/horizon file loading and exports.
+// -----------------------------------------------------------------------------
+function showNotice(msg,type='warn'){$('dataMessage').textContent=msg;$('dataMessage').className=`status-note ${type}`;}
+function updateDataBadge(){const real=dataMode==='spice';$('dataBadge').classList.toggle('real',real);$('dataBadgeText').textContent=real?'SPICE EPHEMERIS LOADED':'DEMO MODE · SYNTHETIC DATA';$('scienceNotice').textContent=real?'SPICE dataset loaded. Verify that it was generated with suitable kernels, provides sufficient time coverage, and contains vectors expressed in IAU_MOON relative to MOON. Terrain and RF link performance are not yet validated.':'IMPORTANT: demo data must not be used for mission decisions. Load a validated SPICE dataset and a LOLA-derived horizon profile for a more realistic assessment.';}
+$('dataFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const raw=JSON.parse(await file.text());ephemeris=normalizeDataset(raw);dataMode='spice';updateDataBadge();const start=new Date(J2000_MS+ephemeris.start*1000),end=new Date(J2000_MS+ephemeris.end*1000);showNotice(`Dataset loaded: ${ephemeris.samples.length.toLocaleString('en-US')} samples · coverage ${start.toISOString().slice(0,10)} to ${end.toISOString().slice(0,10)} · average step ${number(ephemeris.step/60,1)} min.`, 'good');const radii=getMoonRadii();showNotice($('dataMessage').textContent+` · ellipsoid radii ${number(radii.a,2)}/${number(radii.c,2)} km.`,'good');calculate();}catch(err){ephemeris=null;dataMode='demo';updateDataBadge();showNotice(`Could not load positions.json: ${err.message}`,'warn');}});
+$('horizonFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const text=await file.text();const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);const pts=[];for(const line of lines){if(/azimuth|azimut|horizon|horizonte/i.test(line)&&!/^[-+]?\d/.test(line))continue;const cols=line.split(/[;,\t]/).map(Number);if(cols.length>=2&&Number.isFinite(cols[0])&&Number.isFinite(cols[1])){if(cols[1]<-90||cols[1]>90)throw new Error('Horizon elevation must be between −90° and +90°.');pts.push({az:wrap360(cols[0]),el:cols[1]});}}if(pts.length<4)throw new Error('The CSV must contain at least 4 azimuth,elevation pairs.');pts.sort((a,b)=>a.az-b.az);horizonProfile=pts;horizonProfileSite={lat:Number($('lat').value),lon:Number($('lon').value)};$('terrainMessage').textContent=`Horizon profile loaded: ${pts.length} points · linked to ${number(horizonProfileSite.lat,3)}°, ${number(horizonProfileSite.lon,3)}°. It applies only to this site; other candidates use the geometric horizon until their own profile is loaded.`;$('terrainMessage').className='status-note good';calculate();}catch(err){showNotice(`Could not read the CSV profile: ${err.message}`,'warn');}});
+$('resetDemo').addEventListener('click',()=>{ephemeris=null;dataMode='demo';horizonProfile=null;horizonProfileSite=null;$('dataFile').value='';$('horizonFile').value='';$('terrainMessage').textContent='Horizon: flat local horizon (0°). No LOLA/DEM profiles or terrain obstructions are loaded.';$('terrainMessage').className='status-note';updateDataBadge();showNotice('Demo mode enabled. Data is synthetic and is not suitable for mission decisions.','warn');calculate();});
+$('downloadHorizonTemplate').addEventListener('click',()=>{const content='azimuth_deg,horizon_elevation_deg\n0,0\n45,1.2\n90,2.0\n135,0.5\n180,0\n225,1.0\n270,0.8\n315,0.2\n';download('lunara_horizon_template.csv',content,'text/csv');});
+function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
+function reportObject(){return {application:'LUNARA Enhanced',generated_utc:new Date().toISOString(),data_mode:dataMode,ephemeris_metadata:ephemeris?.meta||null,reference_frame:'IAU_MOON',observer:'MOON',coordinate_convention:'planetocentric latitude; east-positive longitude',site:currentScenario?.site||null,window_hours:currentScenario?.hours||null,metrics:currentScenario?{sun_center_visible_hours:currentScenario.summary.sunCenter,sun_limb_visible_hours:currentScenario.summary.sunLimb,earth_center_visible_hours:currentScenario.summary.earthCenter,earth_limb_visible_hours:currentScenario.summary.earthLimb,max_solar_elevation_deg:currentScenario.summary.maxSun.sun.elevation,max_earth_elevation_deg:currentScenario.summary.maxEarth.earth.elevation,max_panel_output_W_m2:currentScenario.summary.maxPower.output}:null,comparison:comparison.map(c=>({site:c.site,window_hours:c.hours,sun_center_visible_hours:c.summary.sunCenter,earth_disk_visible_hours:c.summary.earthLimb,max_panel_output_W_m2:c.summary.maxPower.output})),limitations:['Demo synthetic unless SPICE dataset uploaded','Lunar terrain is not included unless a local horizon CSV is loaded','Earth disk visibility is not an RF link budget','Power model is a geometric irradiance proxy, not a full electrical/thermal model','3D lunar texture is illustrative, not LOLA topography']};}
+$('exportJson').addEventListener('click',()=>download('lunara_mission_report.json',JSON.stringify(reportObject(),null,2),'application/json'));
+$('exportCompare').addEventListener('click',()=>{const header='name,latitude_planetocentric_deg,longitude_east_deg,start_utc,window_hours,sun_center_visible_h,earth_disk_visible_h,max_panel_output_W_m2,data_mode';const lines=comparison.map(c=>[c.site.name,c.site.lat,c.site.lon,new Date(c.startMs).toISOString(),c.hours,c.summary.sunCenter,c.summary.earthLimb,c.summary.maxPower.output,c.mode].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));download('lunara_comparison.csv',[header,...lines].join('\n'),'text/csv');});
+
+// -----------------------------------------------------------------------------
+// Main calculate workflow
+// -----------------------------------------------------------------------------
+function buildSite(){const lat=Number($('lat').value),lon=Number($('lon').value),alt=Number($('alt').value),tilt=Number($('tilt').value),panelAz=Number($('panelAz').value),efficiency=Number($('efficiency').value);if(!Number.isFinite(lat)||lat< -90||lat>90)throw new Error('Latitude must be between −90° and +90°.');if(!Number.isFinite(lon)||lon< -180||lon>180)throw new Error('Longitude must be between −180° and +180°.');if(!Number.isFinite(alt)||alt< -5||alt>15)throw new Error('Altitude must be between −5 and +15 km.');if(!Number.isFinite(tilt)||tilt<0||tilt>90)throw new Error('Panel tilt must be between 0° and 90°.');if(!Number.isFinite(panelAz)||panelAz<0||panelAz>=360)throw new Error('Panel azimuth must be between 0° and 359°.');if(!Number.isFinite(efficiency)||efficiency<1||efficiency>50)throw new Error('Panel efficiency must be between 1% and 50%.');return {name:$('siteName').value.trim()||'Unnamed scenario',lat,lon,alt,tilt,panelAz,efficiency};}
+function calculate(){
+  currentScenario=null; rows=[];
+  try{
+    const site=buildSite(),dateVal=$('date').value;if(!dateVal)throw new Error('Select a UTC date and time.');const startMs=new Date(dateVal+':00Z').getTime();if(!Number.isFinite(startMs))throw new Error('The selected date is invalid.');const hours=Number($('duration').value),step=Number($('sampleStep').value);
+    rows=makeRows(site,startMs,hours,step);currentIndex=0;const summary=calculateSummary(rows);currentScenario={site,summary,startMs,hours};
+    renderAll();
+    if(dataMode==='demo')showNotice('DEMO MODE: synthetic values are provided to test controls, animation and visualizations. They are not SPICE predictions and must not be used to select a real landing site.','warn');else showNotice(`SPICE ephemerides interpolated within dataset coverage. Original average step: ${number(ephemeris.step/60,1)} min; visual interpolation does not increase the underlying physical data resolution.`,'good');
+  }catch(err){showNotice(err.message,'warn');$('skyStatus').textContent='No data available for this time window';console.error(err);}
+}
+$('calculate').addEventListener('click',calculate);$('timeSlider').addEventListener('input',e=>{currentIndex=Number(e.target.value);if(rows.length)renderAll();});$('play').addEventListener('click',()=>{if(playTimer){clearInterval(playTimer);playTimer=null;$('play').textContent='▶ Play';return;}if(!rows.length)return;$('play').textContent='Ⅱ Pause';playTimer=setInterval(()=>{currentIndex=(currentIndex+1)%rows.length;$('timeSlider').value=String(currentIndex);renderAll();},120);});$('addCompare').addEventListener('click',addCurrentComparison);$('clearCompare').addEventListener('click',()=>{comparison=[];renderComparison();});$('searchCandidates').addEventListener('click',()=>{try{$('searchResults').innerHTML='<div class="compare-empty" style="grid-column:1/-1">Scanning the polar grid…</div>';const list=candidateGrid();renderCandidates(list);}catch(e){$('searchResults').innerHTML=`<div class="compare-empty" style="grid-column:1/-1">${escapeHtml(e.message)}</div>`;}});
+$('preset').addEventListener('change',e=>{const p=PRESETS[e.target.value];if(!p)return;$('lat').value=p.lat;$('lon').value=p.lon;$('alt').value=p.alt;$('siteName').value=p.name;calculate();});
+$('date').value='2026-11-10T12:00';
+
+// Section navigation: keep the selected destination highlighted during scroll/click.
+const missionNavLinks = [...document.querySelectorAll('.mission-nav a')];
+missionNavLinks.forEach(link => link.addEventListener('click', () => {
+  missionNavLinks.forEach(item => item.classList.toggle('active', item === link));
+}));
+if ('IntersectionObserver' in window) {
+  const navObserver = new IntersectionObserver(entries => {
+    const visible = entries.filter(entry => entry.isIntersecting).sort((a,b) => b.intersectionRatio-a.intersectionRatio)[0];
+    if (!visible) return;
+    missionNavLinks.forEach(link => link.classList.toggle('active', link.hash === `#${visible.target.id}`));
+  }, { rootMargin: '-18% 0px -68% 0px', threshold: [0, .2, .45] });
+  ['workspace','visuals','windows','compare','explorer','science'].forEach(id => {
+    const section = document.getElementById(id);
+    if (section) navObserver.observe(section);
+  });
+}
+
+// Startup: graceful visual fallback if WebGL is unavailable.
+try{sky3d=createSky3D();moon3d=createMoon3D();}catch(err){console.warn('Could not initialize Three.js:',err);fallbackVisuals=createFallbackVisuals();$('skyStatus').textContent='2D fallback view';$('moonStatus').textContent='2D fallback view';}
+updateDataBadge();calculate();
+</script>
+</body>
+</html>
