@@ -8,7 +8,8 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
   }
 }
 </script>
@@ -615,6 +616,10 @@ h1, h2, h3, .hero h2, .panel-head h3 { font-family: var(--font-display); }
 <script type="module">
 let THREE = null;
 try { THREE = await Promise.race([import('three'), new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out loading Three.js')), 2500))]); } catch (error) { console.warn('Three.js is unavailable; switching to the 2D fallback view.', error); }
+let GLTFLoader = null;
+if (THREE) {
+  try { GLTFLoader = (await import('three/addons/loaders/GLTFLoader.js')).GLTFLoader; } catch (error) { console.warn('GLTFLoader is unavailable; moon model will not load.', error); }
+}
 
 // -----------------------------------------------------------------------------
 // State and constants
@@ -866,24 +871,18 @@ function renderAll(){
 function makeLabelSprite(text,color){const c=document.createElement('canvas');c.width=320;c.height=90;const x=c.getContext('2d');x.fillStyle='rgba(12,7,25,.90)';x.fillRect(3,3,314,84);x.strokeStyle=color;x.lineWidth=4;x.strokeRect(3,3,314,84);x.fillStyle=color;x.font='600 34px "Space Grotesk", sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,160,45);const tex=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));s.scale.set(25,7,1);return s;}
 function makeStarField(scene){const g=new THREE.BufferGeometry(),p=[];for(let i=0;i<1100;i++){const u=Math.random()*2-1,a=Math.random()*Math.PI*2,r=170,xy=Math.sqrt(1-u*u);p.push(r*xy*Math.cos(a),r*u,r*xy*Math.sin(a));}g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xd8e8ff,size:0.8,transparent:true,opacity:.78})));}
 function makeGround(scene){
-  const geometry=new THREE.CircleGeometry(120,128),mat=new THREE.MeshStandardMaterial({color:0x333d4b,roughness:1,metalness:0});const ground=new THREE.Mesh(geometry,mat);ground.rotation.x=-Math.PI/2;ground.position.y=-13;scene.add(ground);
-  const ring=new THREE.Mesh(new THREE.RingGeometry(118,120,128),new THREE.MeshBasicMaterial({color:0x5ce0ae,side:THREE.DoubleSide,transparent:true,opacity:.2}));ring.rotation.x=-Math.PI/2;ring.position.y=-12.7;scene.add(ring);
-  const terrain=new THREE.Group();
-  for(let j=0;j<24;j++){
-    const angle=Math.random()*Math.PI*2,dist=18+Math.random()*72,r=2+Math.random()*8,height=1+Math.random()*5;
-    const g=new THREE.ConeGeometry(r,height,7);const m=new THREE.MeshStandardMaterial({color:j%2?0x4a5360:0x65707e,roughness:1});const hill=new THREE.Mesh(g,m);hill.position.set(Math.cos(angle)*dist,-13+height/2,Math.sin(angle)*dist);hill.rotation.y=Math.random()*Math.PI;terrain.add(hill);
-  }
-  scene.add(terrain);
-  const horizon=new THREE.Mesh(new THREE.TorusGeometry(100,.26,5,160),new THREE.MeshBasicMaterial({color:0x5ce0ae,transparent:true,opacity:.45}));horizon.rotation.x=Math.PI/2;horizon.position.y=-12.7;scene.add(horizon);
+  const loader=new THREE.TextureLoader();let moonTex=null;try{moonTex=loader.load('models/moonsurface.jpg');}catch(e){console.warn('No se pudo cargar models/moonsurface.jpg',e);}const geometry=new THREE.SphereGeometry(400,64,64),mat=new THREE.MeshStandardMaterial({map:moonTex,roughness:1,metalness:0});const ground=new THREE.Mesh(geometry,mat);ground.position.set(0,-413,0);scene.add(ground);
+
 }
 function createSky3D(){
   if(!THREE) throw new Error('Three.js is unavailable.');
-  const host=$('skyScene');const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b0718);
+  const host=$('skyScene');const scene=new THREE.Scene();const skyLoader=new THREE.TextureLoader();let skyTex=null;try{skyTex=skyLoader.load('models/starssky.jpg');skyTex.mapping=THREE.EquirectangularReflectionMapping;scene.background=skyTex;}catch(e){console.warn('No se pudo cargar models/starssky.jpg',e);scene.background=new THREE.Color(0x0b0718);}
+
   const camera=new THREE.PerspectiveCamera(67,host.clientWidth/host.clientHeight,.1,500);camera.position.set(0,1,0);camera.rotation.order='YXZ';camera.rotation.x=-.045;
   const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;host.appendChild(renderer.domElement);
-  scene.add(new THREE.AmbientLight(0x8095ad,.65));const light=new THREE.PointLight(0xffffff,900,0);light.position.set(0,100,20);scene.add(light);makeStarField(scene);makeGround(scene);
-  const sun=new THREE.Mesh(new THREE.SphereGeometry(3.4,32,32),new THREE.MeshBasicMaterial({color:0xffc35b}));const sunGlow=new THREE.Mesh(new THREE.SphereGeometry(5.4,24,24),new THREE.MeshBasicMaterial({color:0xffd37d,transparent:true,opacity:.18}));sun.add(sunGlow);scene.add(sun);const sunLabel=makeLabelSprite('SUN','#ffd27a');scene.add(sunLabel);
-  const earth=new THREE.Group();const earthMesh=new THREE.Mesh(new THREE.SphereGeometry(3.7,40,32),new THREE.MeshStandardMaterial({color:0x277ec8,roughness:.7,emissive:0x061a36}));earth.add(earthMesh);const cloud=new THREE.Mesh(new THREE.SphereGeometry(3.78,40,32),new THREE.MeshBasicMaterial({color:0x9edcff,wireframe:true,transparent:true,opacity:.15}));earth.add(cloud);scene.add(earth);const earthLabel=makeLabelSprite('EARTH','#81d4ff');scene.add(earthLabel);
+  scene.add(new THREE.AmbientLight(0x8095ad,.65));const light=new THREE.PointLight(0xffffff,900,0);light.position.set(0,100,20);scene.add(light);makeGround(scene);
+  const sunLoader=new THREE.TextureLoader();let sunTex=null;try{sunTex=sunLoader.load('models/sunsurface.jpg');}catch(e){console.warn('No se pudo cargar models/sunsurface.jpg',e);}const sun=new THREE.Mesh(new THREE.SphereGeometry(3.4,32,32),new THREE.MeshBasicMaterial({map:sunTex}));const sunGlow=new THREE.Mesh(new THREE.SphereGeometry(5.4,24,24),new THREE.MeshBasicMaterial({color:0xffd37d,transparent:true,opacity:.18}));sun.add(sunGlow);scene.add(sun);const sunLabel=makeLabelSprite('SUN','#ffd27a');scene.add(sunLabel);
+  const earthLoader=new THREE.TextureLoader();let earthTex=null;try{earthTex=earthLoader.load('models/earthsurface.jpg');}catch(e){console.warn('No se pudo cargar models/earthsurface.jpg',e);}const earth=new THREE.Group();const earthMesh=new THREE.Mesh(new THREE.SphereGeometry(3.7,40,32),new THREE.MeshBasicMaterial({map:earthTex}));earth.add(earthMesh);const cloud=new THREE.Mesh(new THREE.SphereGeometry(3.78,40,32),new THREE.MeshBasicMaterial({color:0x9edcff,wireframe:true,transparent:true,opacity:.15}));earth.add(cloud);scene.add(earth);const earthLabel=makeLabelSprite('EARTH','#81d4ff');scene.add(earthLabel);
   let dragging=false,px=0,py=0,yaw=0,pitch=-.05,zoom=1;
   const down=e=>{dragging=true;px=e.clientX;py=e.clientY;renderer.domElement.setPointerCapture?.(e.pointerId);};
   const move=e=>{if(!dragging)return;yaw-=(e.clientX-px)*.005;pitch=clamp(pitch+(e.clientY-py)*.005,-1.25,1.25);px=e.clientX;py=e.clientY;camera.rotation.set(pitch,yaw,0,'YXZ');};
@@ -897,23 +896,23 @@ function createSky3D(){
 }
 
 // 3D Moon globe: crater-texture is procedural, not LOLA.
-function makeMoonTexture(){const c=document.createElement('canvas');c.width=1024;c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#8c9094';ctx.fillRect(0,0,1024,512);const img=ctx.getImageData(0,0,1024,512);for(let i=0;i<img.data.length;i+=4){const n=(Math.random()-.5)*38;const v=137+n;img.data[i]=v;img.data[i+1]=v;img.data[i+2]=v+3;img.data[i+3]=255;}ctx.putImageData(img,0,0);for(let i=0;i<520;i++){const x=Math.random()*1024,y=Math.random()*512,r=2+Math.random()*20;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle='rgba(35,39,44,.25)';ctx.fill();ctx.beginPath();ctx.arc(x-r*.16,y-r*.16,r*.72,0,Math.PI*2);ctx.strokeStyle='rgba(225,228,229,.26)';ctx.lineWidth=1+Math.random()*2;ctx.stroke();}const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
-function createMoon3D(){
+async function createMoon3D(){
   if(!THREE) throw new Error('Three.js is unavailable.');
+  if(!GLTFLoader) throw new Error('GLTFLoader is unavailable.');
   const host=$('moonScene'),scene=new THREE.Scene();scene.background=new THREE.Color(0x0b0718);
   const camera=new THREE.PerspectiveCamera(43,host.clientWidth/host.clientHeight,.1,100);let radius=3.5,theta=.5,phi=1.1;
   const updateCam=()=>{camera.position.set(radius*Math.sin(phi)*Math.sin(theta),radius*Math.cos(phi),radius*Math.sin(phi)*Math.cos(theta));camera.lookAt(0,0,0);};updateCam();
   const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;host.appendChild(renderer.domElement);
   scene.add(new THREE.AmbientLight(0x8da1b8,.75));const key=new THREE.DirectionalLight(0xffe5bb,2.1);key.position.set(3,4,5);scene.add(key);const fill=new THREE.DirectionalLight(0x5284bc,.55);fill.position.set(-4,-1,-3);scene.add(fill);
-  const globe=new THREE.Mesh(new THREE.SphereGeometry(1.27,96,72),new THREE.MeshStandardMaterial({map:makeMoonTexture(),roughness:1}));scene.add(globe);
+  let moonMesh=null;
+  await new Promise((resolve,reject)=>{new GLTFLoader().load('models/moon.glb',gltf=>{const model=gltf.scene;model.scale.set(1.27,1.27,1.27);scene.add(model);moonMesh=model;resolve();},undefined,reject);});
   const marker=new THREE.Mesh(new THREE.SphereGeometry(.026,18,12),new THREE.MeshBasicMaterial({color:0xff9872}));scene.add(marker);
   const markerGlow=new THREE.Mesh(new THREE.SphereGeometry(.048,16,12),new THREE.MeshBasicMaterial({color:0xff9872,transparent:true,opacity:.2}));scene.add(markerGlow);
-  const grid=new THREE.Mesh(new THREE.SphereGeometry(1.282,36,18),new THREE.MeshBasicMaterial({color:0x9fc3dc,wireframe:true,transparent:true,opacity:.075}));scene.add(grid);
   const axes=new THREE.AxesHelper(1.65);axes.material.transparent=true;axes.material.opacity=.22;scene.add(axes);
   let dragging=false,px=0,py=0;renderer.domElement.addEventListener('pointerdown',e=>{dragging=true;px=e.clientX;py=e.clientY;renderer.domElement.setPointerCapture?.(e.pointerId);});renderer.domElement.addEventListener('pointermove',e=>{if(!dragging)return;theta-=(e.clientX-px)*.007;phi=clamp(phi+(e.clientY-py)*.007,.15,Math.PI-.15);px=e.clientX;py=e.clientY;updateCam();});renderer.domElement.addEventListener('pointerup',()=>dragging=false);renderer.domElement.addEventListener('pointercancel',()=>dragging=false);renderer.domElement.addEventListener('wheel',e=>{radius=clamp(radius+(e.deltaY>0?.18:-.18),1.8,7);updateCam();},{passive:true});
   function update(site){const lat=site.lat*Math.PI/180,lon=site.lon*Math.PI/180;const p=new THREE.Vector3(Math.cos(lat)*Math.cos(lon),Math.sin(lat),Math.cos(lat)*Math.sin(lon)).multiplyScalar(1.30);marker.position.copy(p);markerGlow.position.copy(p);$('moonStatus').textContent=`${number(site.lat,2)}° / ${number(site.lon,2)}°`}
   const resize=()=>{camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();renderer.setSize(host.clientWidth,host.clientHeight);};new ResizeObserver(resize).observe(host);
-  const animate=()=>{requestAnimationFrame(animate);globe.rotation.y+=.0007;grid.rotation.y=globe.rotation.y;renderer.render(scene,camera);};animate();return {scene,camera,renderer,update};
+  const animate=()=>{requestAnimationFrame(animate);if(moonMesh)moonMesh.rotation.y+=.0007;renderer.render(scene,camera);};animate();return {scene,camera,renderer,update};
 }
 function updateSky3D(row){if(sky3d)sky3d.update(row);else fallbackVisuals?.updateSky(row)}function updateMoon3D(site){if(moon3d)moon3d.update(site);else fallbackVisuals?.updateMoon(site)}
 function createFallbackVisuals(){
@@ -1000,7 +999,7 @@ if ('IntersectionObserver' in window) {
 }
 
 // Startup: graceful visual fallback if WebGL is unavailable.
-try{sky3d=createSky3D();moon3d=createMoon3D();}catch(err){console.warn('Could not initialize Three.js:',err);fallbackVisuals=createFallbackVisuals();$('skyStatus').textContent='2D fallback view';$('moonStatus').textContent='2D fallback view';}
+try{sky3d=createSky3D();moon3d=await createMoon3D();}catch(err){console.warn('Could not initialize Three.js:',err);fallbackVisuals=createFallbackVisuals();$('skyStatus').textContent='2D fallback view';$('moonStatus').textContent='2D fallback view';}
 updateDataBadge();calculate();
 </script>
 </body>
