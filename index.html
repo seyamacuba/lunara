@@ -475,6 +475,279 @@ h1, h2, h3, .hero h2, .panel-head h3 { font-family: var(--font-display); }
 @media (prefers-reduced-motion:reduce) { .emblem-orbit-a,.emblem-orbit-b { animation:none; } }
 </style>
 
+
+
+<style>
+/* LUNARA / NASA Space Apps presentation edition
+   Visual layer only. Original scene markup, IDs, controls and module logic are preserved. */
+:root {
+  --bg:#060914;
+  --panel:#0d1527;
+  --panel2:#111d33;
+  --panel3:#091120;
+  --line:rgba(138,178,226,.17);
+  --text:#f3f7ff;
+  --muted:#91a2bb;
+  --soft:#c8d5e8;
+  --cyan:#79e4ff;
+  --blue:#6e9fff;
+  --purple:#a991ff;
+  --amber:#ffc879;
+  --green:#75e7c1;
+  --red:#ff819b;
+  --radius:22px;
+  --shadow:0 28px 80px rgba(0,0,0,.42),0 1px 0 rgba(255,255,255,.035) inset;
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; scroll-padding-top:100px; }
+body {
+  min-height:100vh;
+  color:var(--text);
+  background:
+    radial-gradient(ellipse at 48% 3%,rgba(57,102,167,.18),transparent 35%),
+    radial-gradient(ellipse at 3% 28%,rgba(104,69,179,.13),transparent 30%),
+    radial-gradient(ellipse at 100% 53%,rgba(36,133,158,.10),transparent 32%),
+    linear-gradient(180deg,#070b17 0%,#080b16 48%,#050812 100%);
+  font-family:"Space Grotesk",Inter,ui-sans-serif,system-ui,sans-serif;
+  letter-spacing:.005em;
+}
+body:before {
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.22;
+  background-image:radial-gradient(rgba(194,220,255,.72) .65px,transparent .85px);
+  background-size:47px 47px;
+  mask-image:linear-gradient(to bottom,black,transparent 88%);
+}
+button,input,select { font-family:inherit; }
+.app { max-width:1960px; padding:22px clamp(16px,2.7vw,52px) 58px; }
+.topbar {
+  display:flex; justify-content:space-between; align-items:center; gap:22px;
+  min-height:76px; margin-bottom:18px; padding:2px 2px 17px;
+  border-bottom:1px solid rgba(146,182,232,.12);
+}
+.brand { gap:15px; }
+.lunara-emblem { width:64px; height:64px; flex-basis:64px; filter:drop-shadow(0 0 20px rgba(121,196,255,.23)); }
+.lunara-logo { font-size:clamp(27px,2.3vw,37px); letter-spacing:.2em; color:#fff; text-shadow:0 0 25px rgba(133,186,255,.28); }
+.brand p { color:#8498b5; font:8px "IBM Plex Mono",monospace; letter-spacing:.18em; }
+.brand p i { color:var(--cyan); }
+.top-actions { gap:10px; }
+.status-pill,.chip { border:1px solid rgba(139,177,224,.19); background:rgba(12,22,40,.82); color:#c2d2e8; backdrop-filter:blur(16px); padding:9px 13px; font:9px "IBM Plex Mono",monospace; letter-spacing:.07em; }
+.status-pill .dot { box-shadow:0 0 13px currentColor; }
+.btn { border:1px solid rgba(134,177,228,.25); border-radius:11px; padding:11px 15px; background:linear-gradient(135deg,#182943,#101d31); color:#edf6ff; font-weight:700; font-size:10px; letter-spacing:.045em; box-shadow:0 8px 20px rgba(0,0,0,.19); transition:transform .2s,border-color .2s,filter .2s,box-shadow .2s; }
+.btn:hover { transform:translateY(-2px); filter:brightness(1.14); border-color:rgba(121,228,255,.55); box-shadow:0 12px 28px rgba(0,0,0,.27),0 0 20px rgba(92,173,255,.1); }
+.btn.primary { border-color:rgba(137,221,255,.65); background:linear-gradient(120deg,#197d9f,#3f65b4 56%,#6553a9); box-shadow:0 10px 30px rgba(52,130,199,.27),inset 0 1px 0 rgba(255,255,255,.17); }
+.btn.primary:hover { box-shadow:0 12px 34px rgba(52,130,199,.38); }
+.btn.ghost { background:rgba(13,22,39,.82); border-color:rgba(139,177,224,.2); }
+.btn.amber { background:linear-gradient(120deg,#684b26,#30251b); border-color:#96744a; }
+.mission-nav {
+  position:sticky; top:10px; z-index:40; display:flex; align-items:center; gap:5px;
+  width:max-content; max-width:100%; overflow-x:auto; margin:0 0 20px; padding:6px;
+  border:1px solid rgba(133,174,224,.16); border-radius:15px;
+  background:rgba(8,15,29,.84); box-shadow:0 12px 35px rgba(0,0,0,.25);
+  backdrop-filter:blur(22px); scrollbar-width:thin;
+}
+.mission-nav a { flex:0 0 auto; padding:10px 14px; border-radius:10px; color:#8fa4c1; font:9px "IBM Plex Mono",monospace; letter-spacing:.045em; text-transform:uppercase; text-decoration:none; transition:all .2s; }
+.mission-nav a:hover,.mission-nav a:focus-visible { color:#fff; background:rgba(115,177,255,.12); outline:none; }
+.mission-nav a.active { color:#f4fbff; background:linear-gradient(135deg,rgba(84,163,211,.25),rgba(126,108,219,.2)); box-shadow:inset 0 0 0 1px rgba(141,212,255,.23),0 4px 16px rgba(60,134,196,.1); }
+.hero {
+  position:relative; isolation:isolate; overflow:hidden;
+  display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.6fr); align-items:center; gap:30px;
+  min-height:260px; margin-bottom:25px; padding:clamp(26px,3.4vw,52px);
+  border:1px solid rgba(134,180,239,.23); border-radius:28px;
+  background:
+    radial-gradient(ellipse at 78% 55%,rgba(91,139,205,.18),transparent 25%),
+    radial-gradient(ellipse at 25% 120%,rgba(70,104,173,.15),transparent 50%),
+    linear-gradient(112deg,rgba(17,31,54,.98),rgba(12,18,37,.98) 55%,rgba(18,26,49,.98));
+  box-shadow:0 32px 90px rgba(0,0,0,.33),inset 0 1px 0 rgba(255,255,255,.07);
+}
+.hero:before {
+  content:""; position:absolute; z-index:0; pointer-events:none; width:360px; height:360px; right:18%; top:-100px; border-radius:50%; opacity:.38;
+  background:radial-gradient(circle at 31% 28%,#fff 0 1px,transparent 2px),radial-gradient(circle at 36% 33%,#dce6fa 0%,#8f9bb6 35%,#475675 66%,#141e35 100%);
+  box-shadow:inset -35px -25px 55px rgba(0,0,0,.65),0 0 110px rgba(102,173,255,.18);
+}
+.hero:after { width:520px; height:520px; right:10%; top:-200px; border-color:rgba(139,199,255,.19); box-shadow:0 0 0 34px rgba(127,183,255,.035),0 0 0 75px rgba(127,183,255,.025),0 0 0 125px rgba(127,183,255,.016); }
+.hero>div { position:relative; z-index:1; }
+.eyebrow { color:#91dfff; font:9px "IBM Plex Mono",monospace; letter-spacing:.2em; }
+.hero h2 { max-width:900px; margin:14px 0 15px; color:#f6f8ff; font:800 clamp(34px,4.5vw,62px)/.99 "Sora",sans-serif; letter-spacing:-.065em; text-wrap:balance; }
+.hero h2 em { color:#a9dfff; font-style:normal; text-shadow:0 0 32px rgba(113,190,255,.25); }
+.hero p { max-width:770px; color:#c0cde0; font-size:14px; line-height:1.75; }
+.hero-tags { gap:9px; margin-top:21px; }
+.hero-tags span { background:rgba(7,15,29,.55); border-color:rgba(146,194,246,.19); color:#d8e7f7; font:8px "IBM Plex Mono",monospace; }
+.hero-tags i { background:var(--cyan); box-shadow:0 0 11px var(--cyan); }
+.hero-side { width:min(100%,360px); gap:10px; }
+.hero-stat { border:1px solid rgba(155,192,235,.18); border-radius:16px; padding:15px 16px; background:rgba(6,12,24,.62); box-shadow:0 12px 28px rgba(0,0,0,.16); backdrop-filter:blur(14px); }
+.hero-stat strong { font:700 24px "Sora",sans-serif; letter-spacing:-.04em; }
+.hero-stat span { color:#8fa4c0; font:8px "IBM Plex Mono",monospace; letter-spacing:.12em; }
+.grid { grid-template-columns:minmax(260px,295px) minmax(0,1fr); gap:22px; align-items:start; }
+.panel { position:relative; overflow:hidden; border:1px solid rgba(129,168,220,.16); border-radius:22px; background:linear-gradient(155deg,rgba(14,24,43,.98),rgba(8,14,27,.99)); box-shadow:0 20px 55px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035); }
+.panel-head { min-height:62px; padding:18px 21px 15px; border-bottom:1px solid rgba(133,173,224,.12); background:linear-gradient(90deg,rgba(39,66,104,.17),transparent 75%); }
+.panel-head h3 { color:#eff6ff; font:700 11px "Sora",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+.panel-head small { color:#8298b5; font:8px "IBM Plex Mono",monospace; letter-spacing:.14em; }
+.panel-body { padding:19px; }
+.section-kicker { margin:3px 0 12px; color:#8cdcff; font:800 9px "IBM Plex Mono",monospace; letter-spacing:.17em; }
+.field { gap:6px; margin-bottom:13px; }
+.field label { color:#b8c8dd; font-size:10px; font-weight:650; }
+.field input,.field select { width:100%; min-width:0; padding:11px 12px; border:1px solid rgba(136,172,218,.2); border-radius:10px; outline:none; color:#f1f6ff; background:rgba(5,11,22,.82); transition:border-color .18s,box-shadow .18s; }
+.field input:hover,.field select:hover { border-color:rgba(121,228,255,.38); }
+.field input:focus,.field select:focus { border-color:#7ddfff; box-shadow:0 0 0 3px rgba(94,194,237,.13); }
+.field-note,.inline-note { color:#899db7; font-size:10px; line-height:1.65; }
+.divider { margin:18px 0; border:0; border-top:1px solid rgba(137,176,225,.13); }
+.status-note { padding:11px 12px; border:1px solid rgba(135,172,218,.16); border-radius:11px; background:rgba(5,11,22,.75); color:#9fb2cc; font-size:10px; line-height:1.6; }
+.status-note.warn { background:rgba(76,52,22,.28); border-color:rgba(226,174,96,.3); color:#f1ce91; }
+.status-note.good { background:rgba(16,74,56,.25); border-color:rgba(104,218,174,.28); color:#a7ead0; }
+#workspace aside.panel { position:sticky; top:88px; max-height:calc(100vh - 104px); overflow:auto; scrollbar-width:thin; scrollbar-color:#375678 transparent; }
+#workspace aside.panel::-webkit-scrollbar { width:6px; }
+#workspace aside.panel::-webkit-scrollbar-thumb { background:#375678; border-radius:8px; }
+.content { min-width:0; }
+.visual-intro { display:flex; align-items:flex-end; justify-content:space-between; gap:22px; margin:4px 2px 17px; }
+.visual-overline { display:flex; align-items:center; gap:9px; color:#92dcff; font:9px "IBM Plex Mono",monospace; letter-spacing:.18em; }
+.live-pulse { width:7px; height:7px; display:inline-block; border-radius:50%; background:#72efc3; box-shadow:0 0 0 4px rgba(114,239,195,.09),0 0 13px #72efc3; }
+.visual-separator { color:#536a87; }
+.visual-intro h2 { margin:9px 0 3px; color:#f4f7ff; font:800 clamp(25px,2.6vw,36px)/1.05 "Sora",sans-serif; letter-spacing:-.055em; }
+.visual-intro h2 span { color:#8cdeff; }
+.visual-intro p { margin:0; color:#91a4bf; font-size:11px; }
+.visual-side-note { display:flex; align-items:center; gap:11px; flex:0 0 auto; padding:9px 13px 9px 9px; border:1px solid rgba(130,181,232,.18); border-radius:13px; background:rgba(10,20,36,.68); color:#8fa7c4; font:8px/1.5 "IBM Plex Mono",monospace; letter-spacing:.1em; }
+.visual-side-mark { display:grid; place-items:center; width:36px; height:36px; border-radius:10px; color:#dff6ff; font:800 12px "Sora",sans-serif; background:linear-gradient(145deg,rgba(69,169,218,.4),rgba(122,101,204,.37)); box-shadow:inset 0 0 0 1px rgba(173,219,255,.18),0 0 20px rgba(87,172,228,.13); }
+.visual-grid { display:grid; grid-template-columns:minmax(0,1.28fr) minmax(0,.92fr); align-items:stretch; gap:17px; margin-bottom:18px; }
+.visual-grid>.panel { border-radius:25px; border-color:rgba(133,183,239,.23); box-shadow:0 26px 75px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.07); }
+.visual-grid>.panel:first-child { border-color:rgba(116,206,255,.3); box-shadow:0 26px 75px rgba(0,0,0,.35),0 0 38px rgba(66,164,223,.075),inset 0 1px 0 rgba(255,255,255,.07); }
+.visual-grid .panel-head { min-height:68px; padding:20px 23px 16px; align-items:center; }
+.visual-grid .panel-head h3 { font-size:12px; letter-spacing:.13em; }
+.visual-grid .panel-head small { color:#8da9c8; }
+.scene-wrap {
+  position:relative; isolation:isolate; height:clamp(430px,39vw,590px); overflow:hidden;
+  background:radial-gradient(ellipse at 50% 28%,#1b3a5a 0%,#0c1930 44%,#060a16 100%);
+}
+#skyScene.scene-wrap { background:radial-gradient(ellipse at 50% 25%,#1b4264 0%,#0b1a31 43%,#060a16 100%); }
+#moonScene.scene-wrap { background:radial-gradient(ellipse at 50% 36%,#263858 0%,#11182a 46%,#070a14 100%); }
+.scene-wrap:before { content:""; position:absolute; z-index:1; inset:0; pointer-events:none; opacity:.16; background-image:linear-gradient(rgba(163,207,255,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(163,207,255,.16) 1px,transparent 1px); background-size:62px 62px; mask-image:radial-gradient(ellipse at center,black,transparent 83%); }
+.scene-wrap:after { content:""; position:absolute; z-index:1; inset:0; pointer-events:none; background:radial-gradient(ellipse at center,transparent 42%,rgba(3,7,15,.45) 100%),linear-gradient(180deg,rgba(5,9,18,.18),transparent 20%,transparent 75%,rgba(5,9,18,.42)); }
+.scene-wrap canvas { position:relative; z-index:0; display:block; width:100%; height:100%; outline:none; filter:saturate(1.1) contrast(1.035); }
+.scene-label,.scene-status,.scene-help { position:absolute; z-index:3; border:1px solid rgba(143,197,247,.22); border-radius:9px; background:rgba(5,11,22,.72); color:#d9eaff; backdrop-filter:blur(14px); box-shadow:0 8px 24px rgba(0,0,0,.19); font:8px "IBM Plex Mono",monospace; letter-spacing:.1em; }
+.scene-label { top:17px; left:18px; padding:8px 11px; text-transform:uppercase; }
+.scene-status { top:17px; right:18px; padding:7px 10px; color:#a9dfff; }
+.scene-help { bottom:17px; left:18px; padding:7px 10px; color:#9eb4cf; }
+.legend { min-height:49px; padding:13px 19px; gap:16px; border-top:1px solid rgba(133,173,224,.13); background:rgba(6,12,24,.74); color:#8fa4bf; font:8px "IBM Plex Mono",monospace; letter-spacing:.035em; }
+.legend i { width:7px; height:7px; box-shadow:0 0 10px currentColor; }
+.kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:17px; }
+.kpi { position:relative; min-width:0; min-height:104px; overflow:hidden; padding:16px 17px; border:1px solid rgba(134,173,220,.16); border-radius:17px; background:linear-gradient(145deg,rgba(17,31,53,.98),rgba(8,15,29,.99)); box-shadow:0 12px 32px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.035); transition:transform .2s,border-color .2s; }
+.kpi:hover { transform:translateY(-3px); border-color:rgba(121,211,255,.36); }
+.kpi:after { content:""; position:absolute; width:105px; height:105px; right:-45px; bottom:-65px; border:1px solid rgba(135,200,255,.16); border-radius:50%; box-shadow:0 0 0 13px rgba(135,200,255,.025),0 0 0 27px rgba(135,200,255,.018); }
+.kpi .label { color:#8fa4bf; font:8px "IBM Plex Mono",monospace; letter-spacing:.13em; }
+.kpi strong { display:block; margin:8px 0 3px; font:700 clamp(19px,1.8vw,27px) "IBM Plex Mono",monospace; letter-spacing:-.055em; }
+.kpi small { color:#879ab4; font-size:9px; }
+.sun-text { color:#ffd17e; }.earth-text { color:#8fdfff; }.green-text { color:#83e7c0; }
+.metrics-row { gap:14px; margin-bottom:17px; }
+.metric-card { padding:19px; border:1px solid rgba(134,173,220,.16); border-radius:18px; background:linear-gradient(155deg,rgba(15,27,47,.98),rgba(8,14,27,.99)); box-shadow:0 14px 36px rgba(0,0,0,.18); }
+.metric-title { margin-bottom:13px; }
+.metric-title strong { font:700 10px "IBM Plex Mono",monospace; letter-spacing:.11em; }
+.metric-title span { font:8px "IBM Plex Mono",monospace; }
+.big-reading { color:#f1f7ff; font:700 clamp(29px,2.5vw,39px) "IBM Plex Mono",monospace; letter-spacing:-.06em; }
+.sub-reading { color:#8ea2bd; font-size:10px; }
+.metric-line { padding-top:9px; margin-top:9px; border-top:1px solid rgba(135,173,221,.12); color:#9fb1c8; font-size:10px; }
+.metric-line b { color:#edf5ff; }
+.flag { padding:5px 9px; border-radius:999px; font:800 8px "IBM Plex Mono",monospace; letter-spacing:.08em; }
+.flag.good { background:rgba(24,115,81,.27); color:#9aebcb; }.flag.partial { background:rgba(125,87,30,.27); color:#f2d08d; }.flag.bad { background:rgba(132,45,67,.27); color:#ffadba; }.flag.neutral { background:rgba(72,103,149,.22); color:#b9d7f8; }
+.chart-box { padding:17px 20px 8px; }
+.chart-canvas { height:290px; }
+.chart-legend { padding:5px 5px 14px; gap:19px; color:#96a9c2; font:9px "IBM Plex Mono",monospace; }
+.timeline { padding:19px 21px; }
+.track { grid-template-columns:100px minmax(0,1fr); gap:14px; margin:14px 0; }
+.track-name { color:#c0d0e4; font:9px "IBM Plex Mono",monospace; }
+.track-bar { height:18px; border:1px solid rgba(136,174,219,.17); border-radius:7px; background:#17243a; }
+.segment { box-shadow:0 0 14px rgba(255,255,255,.09); }
+.time-control { padding:16px 21px; border-top:1px solid rgba(135,173,221,.13); }
+.time-control input { accent-color:#81ddff; }
+.time-label { color:#a9bed8; font:9px "IBM Plex Mono",monospace; }
+.bottom-grid { gap:17px; margin-top:17px; }
+.compare-item,.candidate,.tech-item { padding:13px; border:1px solid rgba(134,173,220,.15); border-radius:13px; background:rgba(6,13,25,.7); }
+.compare-item strong,.candidate strong { color:#eef6ff; font-size:11px; }
+.compare-item small,.candidate p { color:#8fa3bd; }
+.compare-empty { padding:20px; border:1px dashed rgba(133,173,220,.23); border-radius:13px; color:#91a5c0; }
+.data-table { font:9px "IBM Plex Mono",monospace; }
+.data-table th { padding:12px 10px; color:#a8bad2; background:rgba(5,11,22,.83); }
+.data-table td { padding:12px 10px; border-top:1px solid rgba(134,173,220,.12); color:#dce9f8; }
+.search-controls { gap:11px; }
+.candidate { transition:transform .2s,border-color .2s; }.candidate:hover { transform:translateY(-3px); border-color:rgba(126,207,255,.38); }
+.technical { gap:12px; }
+.tech-item { padding:15px; }
+.tech-item strong { color:#e4efff; font:700 10px "Sora",sans-serif; }
+.tech-item p { color:#91a4bd; line-height:1.7; }
+.tag { border-color:rgba(134,173,220,.2); color:#adc6e2; }
+.footer { padding:32px 0 12px; color:#62748e; font:8px "IBM Plex Mono",monospace; letter-spacing:.08em; }
+#science { margin-bottom:5px; }
+#science .technical { grid-template-columns:repeat(3,minmax(0,1fr)); }
+#science .panel-body { padding:21px; }
+@media (min-width:1600px) {
+  .visual-grid { grid-template-columns:minmax(0,1.36fr) minmax(0,.9fr); }
+  .scene-wrap { height:clamp(520px,35vw,680px); }
+}
+@media (max-width:1240px) {
+  .grid { grid-template-columns:minmax(245px,275px) minmax(0,1fr); gap:16px; }
+  .visual-grid { grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr); }
+  .scene-wrap { height:clamp(390px,38vw,510px); }
+  .hero { grid-template-columns:minmax(0,1.2fr) minmax(250px,.8fr); }
+}
+@media (max-width:960px) {
+  .grid { grid-template-columns:1fr; }
+  #workspace aside.panel { position:relative; top:auto; max-height:none; overflow:visible; }
+  .grid aside.panel { order:2; }
+  .grid main.content { order:1; }
+  .visual-grid { grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr); }
+  .scene-wrap { height:clamp(380px,48vw,500px); }
+  .hero { grid-template-columns:1fr; }
+  .hero-side { justify-self:start; width:min(100%,520px); }
+  #science .technical { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:850px) {
+  .visual-grid { grid-template-columns:1fr; }
+  .scene-wrap { height:clamp(390px,58vw,500px); }
+}
+@media (max-width:700px) {
+  .app { padding:13px 11px 30px; }
+  .topbar { flex-direction:column; align-items:center; gap:13px; padding-bottom:14px; }
+  .brand { align-self:center; }.brand-content { align-items:center; }.brand p { text-align:center; }
+  .top-actions { justify-content:center; max-width:100%; }
+  .mission-nav { width:100%; top:5px; margin-bottom:15px; }
+  .mission-nav a { padding:9px 11px; font-size:8px; }
+  .hero { min-height:0; padding:23px 19px; border-radius:21px; }
+  .hero:before { width:240px; height:240px; right:-35px; top:-42px; }
+  .hero:after { width:310px; height:310px; right:-60px; top:-75px; }
+  .hero h2 { font-size:clamp(34px,9vw,48px); }
+  .hero p { font-size:12px; }
+  .hero-side { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .visual-intro { align-items:flex-start; }
+  .visual-intro h2 { font-size:27px; }
+  .visual-intro p { max-width:270px; line-height:1.5; }
+  .visual-side-note { padding:7px; font-size:7px; }
+  .visual-side-mark { width:31px; height:31px; }
+  .visual-grid { grid-template-columns:1fr; gap:13px; }
+  .scene-wrap { height:clamp(340px,78vw,460px); }
+  .visual-grid .panel-head { min-height:57px; padding:15px 16px 12px; }
+  .legend { padding:11px 14px; gap:11px; }
+  .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .kpi { min-height:96px; padding:13px; }
+  .kpi strong { font-size:clamp(17px,5vw,23px); }
+  .metrics-row,.bottom-grid { grid-template-columns:1fr; }
+  .search-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .search-results { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #science .technical { grid-template-columns:1fr; }
+  .panel-head { padding:14px 15px 12px; }
+  .panel-body { padding:14px; }
+}
+@media (max-width:420px) {
+  .search-results { grid-template-columns:1fr; }
+  .hero-side { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .visual-side-note { display:none; }
+  .time-control { grid-template-columns:1fr auto; }
+  .time-control button { grid-column:2; }
+  .time-label { grid-column:1 / -1; grid-row:2; }
+  .track { grid-template-columns:58px minmax(0,1fr); gap:8px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*:before,*:after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -514,8 +787,8 @@ h1, h2, h3, .hero h2, .panel-head h3 { font-family: var(--font-display); }
   </header>
 
   <nav class="mission-nav" aria-label="LUNARA navigation">
-    <a class="active" href="#workspace">Mission overview</a>
-    <a href="#visuals">3D environment</a>
+    <a href="#workspace">Mission overview</a>
+    <a class="active" href="#visuals">3D environment</a>
     <a href="#windows">Opportunity windows</a>
     <a href="#compare">Compare scenarios</a>
     <a href="#explorer">Polar site explorer</a>
@@ -581,16 +854,24 @@ h1, h2, h3, .hero h2, .panel-head h3 { font-family: var(--font-display); }
     </aside>
 
     <main class="content">
+      <div class="visual-intro" aria-label="Main 3D mission visualizations">
+        <div>
+          <div class="visual-overline"><span class="live-pulse"></span> MISSION OBSERVATORY <span class="visual-separator">/</span> 01 — LIVE ENVIRONMENT</div>
+          <h2>The lunar theatre<span>.</span></h2>
+          <p>Explore the local sky and the lunar surface from one mission workspace.</p>
+        </div>
+        <div class="visual-side-note"><span class="visual-side-mark">3D</span><span>INTERACTIVE<br>MISSION VIEWS</span></div>
+      </div>
+      <div class="visual-grid" id="visuals">
+        <section class="panel"><div class="panel-head"><h3>Local sky · 3D</h3><small>AZIMUTH · ELEVATION</small></div><div class="scene-wrap" id="skyScene"><div class="scene-label">View from the mission site</div><div class="scene-status" id="skyStatus">Awaiting analysis</div><div class="scene-help">Drag to rotate · scroll to zoom</div></div><div class="legend"><span><i style="background:#ffc66d"></i> Sun</span><span><i style="background:#55b9ff"></i> Earth</span><span><i style="background:#5ce0ae"></i> visible horizon</span><span><i style="background:#8293aa"></i> schematic terrain</span></div></section>
+        <section class="panel"><div class="panel-head"><h3>Lunar location · 3D</h3><small>SITE LOCATION</small></div><div class="scene-wrap" id="moonScene"><div class="scene-label">Moon · selected site</div><div class="scene-status" id="moonStatus">Spherical model</div><div class="scene-help">Drag to orbit · scroll to zoom</div></div><div class="legend"><span><i style="background:#ff9e73"></i> selected landing site</span><span class="inline-note">Illustrative global relief; not LOLA topography.</span></div></section>
+      </div>
+
       <div class="kpis">
         <div class="kpi"><div class="label">Sun above horizon</div><strong class="sun-text" id="kpiSun">—</strong><small id="kpiSunSub">elevation at selected time</small></div>
         <div class="kpi"><div class="label">Earth above horizon</div><strong class="earth-text" id="kpiEarth">—</strong><small id="kpiEarthSub">geometric disk visibility</small></div>
         <div class="kpi"><div class="label">Array irradiance</div><strong class="green-text" id="kpiPower">—</strong><small id="kpiPowerSub">estimated power per m²</small></div>
         <div class="kpi"><div class="label">Radio delay (round trip)</div><strong id="kpiDelay">—</strong><small>vacuum propagation, geometric distance × 2</small></div>
-      </div>
-
-      <div class="visual-grid" id="visuals">
-        <section class="panel"><div class="panel-head"><h3>Local sky · 3D</h3><small>AZIMUTH · ELEVATION</small></div><div class="scene-wrap" id="skyScene"><div class="scene-label">View from the mission site</div><div class="scene-status" id="skyStatus">Awaiting analysis</div><div class="scene-help">Drag to rotate · scroll to zoom</div></div><div class="legend"><span><i style="background:#ffc66d"></i> Sun</span><span><i style="background:#55b9ff"></i> Earth</span><span><i style="background:#5ce0ae"></i> visible horizon</span><span><i style="background:#8293aa"></i> schematic terrain</span></div></section>
-        <section class="panel"><div class="panel-head"><h3>Lunar location · 3D</h3><small>SITE LOCATION</small></div><div class="scene-wrap" id="moonScene"><div class="scene-label">Moon · selected site</div><div class="scene-status" id="moonStatus">Spherical model</div><div class="scene-help">Drag to orbit · scroll to zoom</div></div><div class="legend"><span><i style="background:#ff9e73"></i> selected landing site</span><span class="inline-note">Illustrative global relief; not LOLA topography.</span></div></section>
       </div>
 
       <div class="metrics-row">
