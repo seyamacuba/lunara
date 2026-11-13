@@ -1472,9 +1472,10 @@ function createSky3D(){
 
   const camera=new THREE.PerspectiveCamera(67,host.clientWidth/host.clientHeight,.1,500);camera.position.set(0,1,0);camera.rotation.order='YXZ';camera.rotation.x=-.045;
   const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;host.appendChild(renderer.domElement);
-  scene.add(new THREE.AmbientLight(0x8095ad,.65));const light=new THREE.PointLight(0xffffff,900,0);light.position.set(0,100,20);scene.add(light);makeGround(scene);
-  const sunLoader=new THREE.TextureLoader();let sunTex=null;try{sunTex=sunLoader.load('models/sunsurface.jpg');}catch(e){console.warn('No se pudo cargar models/sunsurface.jpg',e);}const sun=new THREE.Mesh(new THREE.SphereGeometry(3.4,32,32),new THREE.MeshBasicMaterial({map:sunTex}));const sunGlow=new THREE.Mesh(new THREE.SphereGeometry(5.4,24,24),new THREE.MeshBasicMaterial({color:0xffd37d,transparent:true,opacity:.18}));sun.add(sunGlow);scene.add(sun);const sunLabel=makeLabelSprite('SUN','#ffd27a');scene.add(sunLabel);
-  const earthLoader=new THREE.TextureLoader();let earthTex=null;try{earthTex=earthLoader.load('models/earthsurface.jpg');}catch(e){console.warn('No se pudo cargar models/earthsurface.jpg',e);}const earth=new THREE.Group();const earthMesh=new THREE.Mesh(new THREE.SphereGeometry(3.7,40,32),new THREE.MeshBasicMaterial({map:earthTex}));earth.add(earthMesh);const cloud=new THREE.Mesh(new THREE.SphereGeometry(3.78,40,32),new THREE.MeshBasicMaterial({color:0x9edcff,wireframe:true,transparent:true,opacity:.15}));earth.add(cloud);scene.add(earth);const earthLabel=makeLabelSprite('EARTH','#81d4ff');scene.add(earthLabel);
+  scene.add(new THREE.AmbientLight(0xffffff,.25));makeGround(scene);
+  const sunLight=new THREE.DirectionalLight(0xffffff,3);sunLight.target.position.set(0,0,0);scene.add(sunLight);scene.add(sunLight.target);
+  const sunLoader=new THREE.TextureLoader();let sunTex=null;try{sunTex=sunLoader.load('models/sunsurface.jpg');}catch(e){console.warn('No se pudo cargar models/sunsurface.jpg',e);}const sun=new THREE.Mesh(new THREE.SphereGeometry(3.4,32,32),new THREE.MeshBasicMaterial({map:sunTex}));scene.add(sun);const sunLabel=makeLabelSprite('SUN','#ffd27a');scene.add(sunLabel);
+  const earthLoader=new THREE.TextureLoader();let earthTex=null;try{earthTex=earthLoader.load('models/earthsurface.jpg');}catch(e){console.warn('No se pudo cargar models/earthsurface.jpg',e);}const earth=new THREE.Group();const earthMesh=new THREE.Mesh(new THREE.SphereGeometry(3.7,40,32),new THREE.MeshBasicMaterial({map:earthTex}));earth.add(earthMesh);scene.add(earth);const earthLabel=makeLabelSprite('EARTH','#81d4ff');scene.add(earthLabel);
   let dragging=false,px=0,py=0,yaw=0,pitch=-.05,zoom=1;
   const down=e=>{dragging=true;px=e.clientX;py=e.clientY;renderer.domElement.setPointerCapture?.(e.pointerId);};
   const move=e=>{if(!dragging)return;yaw-=(e.clientX-px)*.005;pitch=clamp(pitch+(e.clientY-py)*.005,-1.25,1.25);px=e.clientX;py=e.clientY;camera.rotation.set(pitch,yaw,0,'YXZ');};
@@ -1482,9 +1483,9 @@ function createSky3D(){
   renderer.domElement.addEventListener('pointerdown',down);renderer.domElement.addEventListener('pointermove',move);renderer.domElement.addEventListener('pointerup',up);renderer.domElement.addEventListener('pointercancel',up);
   renderer.domElement.addEventListener('wheel',e=>{zoom=clamp(zoom+(e.deltaY>0?.07:-.07),.65,1.7);camera.fov=67/zoom;camera.updateProjectionMatrix();},{passive:true});
   function positionBody(mesh,label,el,az,r){const e=el*Math.PI/180,a=az*Math.PI/180;const v=new THREE.Vector3(r*Math.cos(e)*Math.sin(a),r*Math.sin(e),-r*Math.cos(e)*Math.cos(a));mesh.position.copy(v);label.position.copy(v.clone().add(new THREE.Vector3(0,8,0)));}
-  function update(row){positionBody(sun,sunLabel,row.sun.elevation,row.sun.azimuth,100);positionBody(earth,earthLabel,row.earth.elevation,row.earth.azimuth,103);}
+  function update(row){positionBody(sun,sunLabel,row.sun.elevation,row.sun.azimuth,100);positionBody(earth,earthLabel,row.earth.elevation,row.earth.azimuth,103);sunLight.position.copy(sun.position);}
   const resize=()=>{const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);};new ResizeObserver(resize).observe(host);
-  const animate=()=>{requestAnimationFrame(animate);earth.rotation.y+=.0015;renderer.render(scene,camera);};animate();return {scene,camera,renderer,update};
+  const animate=()=>{requestAnimationFrame(animate);sun.rotation.y+=0.0015;earth.rotation.y+=.0015;renderer.render(scene,camera);};animate();return {scene,camera,renderer,update};
 }
 
 // 3D Moon globe: crater-texture is procedural, not LOLA.
@@ -1495,14 +1496,14 @@ async function createMoon3D(){
   const camera=new THREE.PerspectiveCamera(43,host.clientWidth/host.clientHeight,.1,100);let radius=3.5,theta=.5,phi=1.1;
   const updateCam=()=>{camera.position.set(radius*Math.sin(phi)*Math.sin(theta),radius*Math.cos(phi),radius*Math.sin(phi)*Math.cos(theta));camera.lookAt(0,0,0);};updateCam();
   const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;host.appendChild(renderer.domElement);
-  scene.add(new THREE.AmbientLight(0x8da1b8,.75));const key=new THREE.DirectionalLight(0xffe5bb,2.1);key.position.set(3,4,5);scene.add(key);const fill=new THREE.DirectionalLight(0x5284bc,.55);fill.position.set(-4,-1,-3);scene.add(fill);
+  scene.add(new THREE.AmbientLight(0xffffff,.25));
+  const siteTarget=new THREE.Object3D();scene.add(siteTarget);
+  const siteLight=new THREE.SpotLight(0xfff0d0,12,18,Math.PI*8/180,.5,1);siteLight.target=siteTarget;scene.add(siteLight);
   let moonMesh=null;
   await new Promise((resolve,reject)=>{new GLTFLoader().load('models/moon.glb',gltf=>{const model=gltf.scene;model.scale.set(1.27,1.27,1.27);scene.add(model);moonMesh=model;resolve();},undefined,reject);});
-  const marker=new THREE.Mesh(new THREE.SphereGeometry(.026,18,12),new THREE.MeshBasicMaterial({color:0xff9872}));scene.add(marker);
-  const markerGlow=new THREE.Mesh(new THREE.SphereGeometry(.048,16,12),new THREE.MeshBasicMaterial({color:0xff9872,transparent:true,opacity:.2}));scene.add(markerGlow);
   const axes=new THREE.AxesHelper(1.65);axes.material.transparent=true;axes.material.opacity=.22;scene.add(axes);
   let dragging=false,px=0,py=0;renderer.domElement.addEventListener('pointerdown',e=>{dragging=true;px=e.clientX;py=e.clientY;renderer.domElement.setPointerCapture?.(e.pointerId);});renderer.domElement.addEventListener('pointermove',e=>{if(!dragging)return;theta-=(e.clientX-px)*.007;phi=clamp(phi+(e.clientY-py)*.007,.15,Math.PI-.15);px=e.clientX;py=e.clientY;updateCam();});renderer.domElement.addEventListener('pointerup',()=>dragging=false);renderer.domElement.addEventListener('pointercancel',()=>dragging=false);renderer.domElement.addEventListener('wheel',e=>{radius=clamp(radius+(e.deltaY>0?.18:-.18),1.8,7);updateCam();},{passive:true});
-  function update(site){const lat=site.lat*Math.PI/180,lon=site.lon*Math.PI/180;const p=new THREE.Vector3(Math.cos(lat)*Math.cos(lon),Math.sin(lat),Math.cos(lat)*Math.sin(lon)).multiplyScalar(1.30);marker.position.copy(p);markerGlow.position.copy(p);$('moonStatus').textContent=`${number(site.lat,2)}° / ${number(site.lon,2)}°`}
+  function update(site){const lat=site.lat*Math.PI/180,lon=site.lon*Math.PI/180;const n=new THREE.Vector3(Math.cos(lat)*Math.cos(lon),Math.sin(lat),Math.cos(lat)*Math.sin(lon));const p=n.clone().multiplyScalar(1.30);siteLight.position.copy(n).multiplyScalar(2.6);siteTarget.position.copy(p);$('moonStatus').textContent=`${number(site.lat,2)}° / ${number(site.lon,2)}°`}
   const resize=()=>{camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();renderer.setSize(host.clientWidth,host.clientHeight);};new ResizeObserver(resize).observe(host);
   const animate=()=>{requestAnimationFrame(animate);if(moonMesh)moonMesh.rotation.y+=.0007;renderer.render(scene,camera);};animate();return {scene,camera,renderer,update};
 }
