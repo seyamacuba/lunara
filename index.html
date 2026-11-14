@@ -1022,6 +1022,25 @@ body {
 @media (prefers-reduced-motion:reduce) { .cosmic-nebula,.cosmic-stars,.cosmic-orbit-grid,.cosmic-light-sweep { animation:none!important; } }
 </style>
 
+
+<style id="lunara-live-spice-bridge">
+.spice-bridge{
+  margin:4px 0 15px;padding:15px;border:1px solid rgba(121,228,255,.24);
+  border-radius:15px;background:
+    radial-gradient(circle at 100% 0%,rgba(63,163,206,.15),transparent 42%),
+    linear-gradient(135deg,rgba(13,33,52,.94),rgba(9,17,31,.96));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 10px 30px rgba(0,0,0,.15)
+}
+.spice-bridge__eyebrow{font:800 9px "IBM Plex Mono",monospace;letter-spacing:.16em;color:#8fe7ff;margin-bottom:7px}
+.spice-bridge__copy{font-size:11px;line-height:1.6;color:#aebfd5;margin-bottom:12px}
+#spiceConnect{min-height:42px;white-space:normal}
+#spiceConnect:disabled{opacity:.65;cursor:wait;transform:none}
+#spiceServiceStatus{margin-top:10px;font-size:10px;line-height:1.55;overflow-wrap:anywhere}
+#spiceServiceStatus.good{border-color:rgba(93,218,173,.36);background:rgba(16,58,47,.42);color:#a9f0d2}
+#spiceServiceStatus.warn{border-color:rgba(255,190,105,.28)}
+@media(max-width:620px){.spice-bridge{padding:12px}}
+</style>
+
 </head>
 <body>
 <div class="cosmic-atmosphere" aria-hidden="true"><div class="cosmic-nebula"></div><div class="cosmic-stars cosmic-stars--near"></div><div class="cosmic-stars cosmic-stars--far"></div><div class="cosmic-orbit-grid"></div><div class="cosmic-light-sweep"></div></div>
@@ -1140,10 +1159,16 @@ body {
         </div></details>
 
         <details class="control-group"><summary><span><i>04</i> Data & terrain</span><b>＋</b></summary><div class="control-group__body">
+        <div class="spice-bridge" id="spiceBridge">
+          <div class="spice-bridge__eyebrow">LIVE EPHEMERIS / LOCAL PYTHON</div>
+          <div class="spice-bridge__copy">Connect this page to your local SPICE engine and calculate real Sun/Earth positions for the selected UTC window.</div>
+          <button class="btn primary full" id="spiceConnect" type="button">↗ Generate real data with SPICE</button>
+          <div id="spiceServiceStatus" class="status-note warn" aria-live="polite">Checking local SPICE service…</div>
+        </div>
         <div class="field"><label class="file-label btn ghost full">⇧ Load positions.json (SPICE)<input id="dataFile" type="file" accept=".json,application/json"></label></div>
         <div class="field"><label class="file-label btn ghost full">⇧ Load local horizon CSV<input id="horizonFile" type="file" accept=".csv,text/csv"></label></div>
         <div class="btn-row"><button class="btn small ghost" id="downloadHorizonTemplate">CSV template</button><button class="btn small ghost" id="resetDemo">Reset to demo</button></div>
-        <div id="dataMessage" class="status-note warn">Demo mode: values are synthetic and are only intended for exploring the interface. Load a SPICE-generated positions.json file for ephemeris-based results.</div>
+        <div id="dataMessage" class="status-note warn">Demo mode: synthetic values are only for exploring the interface. Connect the local SPICE engine below or load a SPICE-generated positions.json file for real ephemerides.</div>
         <div id="terrainMessage" class="status-note">Horizon: flat local horizon (0°). No LOLA/DEM profiles or terrain obstructions are loaded.</div>
         </div></details>
       </div>
@@ -1590,6 +1615,103 @@ if ('IntersectionObserver' in window) {
     if (section) navObserver.observe(section);
   });
 }
+
+
+// -----------------------------------------------------------------------------
+// Local Python / SPICE bridge.
+// The backend returns the same t_utc_s + Sun/Earth vector format consumed by
+// normalizeDataset(); the existing geometry, calculations and renderers remain
+// the source of truth on the client.
+async function refreshLocalSpiceStatus(){
+  const statusEl = $('spiceServiceStatus');
+  if (!statusEl) return;
+  try {
+    const response = await fetch('/api/status', {cache:'no-store'});
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const status = await response.json();
+    if (status.ready) {
+      const names = (status.kernels || []).map(k => k.name).join(' · ');
+      statusEl.textContent = `SPICE READY · ${status.frame} · ${names || 'kernels loaded'}`;
+      statusEl.className = 'status-note good';
+    } else {
+      statusEl.textContent = `SPICE service found, but not ready: ${status.error || status.message || 'check kernels and SpiceyPy'}`;
+      statusEl.className = 'status-note warn';
+    }
+  } catch (error) {
+    statusEl.textContent = 'Local SPICE service not detected. Start start_lunara_spice.bat and open LUNARA at http://127.0.0.1:8765/. Do not open the HTML as file://.';
+    statusEl.className = 'status-note warn';
+  }
+}
+
+async function connectLocalSpice(){
+  const button = $('spiceConnect');
+  const statusEl = $('spiceServiceStatus');
+  const originalLabel = button.textContent;
+  const dateValue = $('date').value;
+  const durationHours = Number($('duration').value);
+  const stepMinutes = Number($('sampleStep').value);
+  if (!dateValue) {
+    showNotice('Select a mission start date/time before generating SPICE data.','warn');
+    return;
+  }
+  const params = new URLSearchParams({
+    start_utc: dateValue,
+    duration_hours: String(durationHours),
+    step_minutes: String(stepMinutes)
+  });
+  button.disabled = true;
+  button.textContent = '⟳ Computing SPICE vectors…';
+  if (statusEl) {
+    statusEl.textContent = 'Calculating Sun and Earth positions with the loaded SPICE kernels…';
+    statusEl.className = 'status-note warn';
+  }
+  try {
+    const response = await fetch(`/api/ephemeris?${params.toString()}`, {
+      method:'GET', cache:'no-store', headers:{'Accept':'application/json'}
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      const details = payload.details || payload.error || `HTTP ${response.status}`;
+      throw new Error(details);
+    }
+
+    // Validate using the same normalizer as the existing file-upload workflow.
+    const nextEphemeris = normalizeDataset(payload);
+    if (nextEphemeris.meta?.frame !== 'IAU_MOON') {
+      throw new Error(`Unexpected reference frame: ${nextEphemeris.meta?.frame || 'not specified'}. LUNARA currently expects IAU_MOON.`);
+    }
+    ephemeris = nextEphemeris;
+    dataMode = 'spice';
+    updateDataBadge();
+
+    const startDate = new Date(J2000_MS + ephemeris.start * 1000);
+    const endDate = new Date(J2000_MS + ephemeris.end * 1000);
+    const kernelSummary = (ephemeris.meta?.ephemeris_kernel || 'SPK') +
+      ' / ' + (ephemeris.meta?.orientation_constants_kernel || 'PCK');
+    if (statusEl) {
+      statusEl.textContent = `CONNECTED · ${ephemeris.samples.length} samples · ${ephemeris.meta.frame} · ${kernelSummary}`;
+      statusEl.className = 'status-note good';
+    }
+    showNotice(
+      `REAL SPICE DATA: ${ephemeris.samples.length.toLocaleString('en-US')} samples · ${startDate.toISOString()} to ${endDate.toISOString()} · step ${number(ephemeris.step/60,1)} min. ` +
+      `Vectors are geometric positions in ${ephemeris.meta.frame}; the existing LUNARA calculations now use these vectors.`,
+      'good'
+    );
+    calculate();
+  } catch (error) {
+    if (statusEl) {
+      statusEl.textContent = `SPICE connection failed: ${error.message}`;
+      statusEl.className = 'status-note warn';
+    }
+    showNotice(`Could not generate SPICE ephemeris: ${error.message}. Check the local Python server and kernel coverage.`, 'warn');
+  } finally {
+    button.disabled = false;
+    button.textContent = originalLabel;
+  }
+}
+
+$('spiceConnect')?.addEventListener('click', connectLocalSpice);
+refreshLocalSpiceStatus();
 
 // Startup: graceful visual fallback if WebGL is unavailable.
 try{sky3d=createSky3D();moon3d=await createMoon3D();}catch(err){console.warn('Could not initialize Three.js:',err);fallbackVisuals=createFallbackVisuals();$('skyStatus').textContent='2D fallback view';$('moonStatus').textContent='2D fallback view';}
